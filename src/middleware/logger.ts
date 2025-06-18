@@ -3,6 +3,7 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import { logger } from "../utils/logger";
 
 export const requestLogger = (
     req: Request,
@@ -13,29 +14,19 @@ export const requestLogger = (
     const { method, url, ip } = req;
 
     // Log request start
-    console.log(`[${new Date().toISOString()}] ${method} ${url} - ${ip}`);
+    logger.http(`${method} ${url} - ${ip}`);
 
     // Override res.end to log response
-    const originalEnd = res.end;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    res.end = function (chunk?: any, encoding?: any): Response {
+    const originalEnd = res.end.bind(res);
+    res.end = function(this: Response, ...args: Parameters<typeof originalEnd>): Response {
         const duration = Date.now() - startTime;
-        const { statusCode } = res;
-        const statusColor =
-            statusCode >= 400
-                ? "\x1b[31m"
-                : statusCode >= 300
-                    ? "\x1b[33m"
-                    : "\x1b[32m";
+        const { statusCode } = this;
 
-        console.log(
-            `[${new Date().toISOString()}] ${method} ${url} - ${statusColor}${statusCode}\x1b[0m - ${duration}ms`,
-        );
+        logger.http(`${method} ${url} - ${statusCode} - ${duration}ms`);
 
-        // Call original end method
-        originalEnd.call(this, chunk, encoding);
-        return this;
-    };
+        // Call original end method with spread operator
+        return originalEnd.apply(this, args);
+    } as typeof res.end;
 
     next();
 };

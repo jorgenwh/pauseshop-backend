@@ -22,7 +22,7 @@ export class DefaultPartialProductParser implements PartialProductParser {
         while ((match = jsonObjectRegex.exec(this.buffer)) !== null) {
             try {
                 const potentialJson = match[1]; // Capture group 1 contains the full JSON object
-                const parsed = JSON.parse(potentialJson);
+                const parsed: unknown = JSON.parse(potentialJson);
 
                 // Check if it's a product or an array of products
                 if (
@@ -35,7 +35,7 @@ export class DefaultPartialProductParser implements PartialProductParser {
                     extractedProducts.push(parsed as Product);
                     lastSuccessfulParseIndex = jsonObjectRegex.lastIndex;
                 } else if (Array.isArray(parsed)) {
-                    parsed.forEach((item) => {
+                    parsed.forEach((item: unknown) => {
                         if (
                             item &&
                             typeof item === "object" &&

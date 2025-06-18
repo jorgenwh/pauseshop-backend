@@ -12,66 +12,29 @@ import {
 } from "./middleware";
 import routes from "./routes";
 import { getVersion } from "./utils";
+import { AnalysisProvider } from "./types/analyze";
 import { AnalysisProviderFactory } from "./services/analysis-provider-factory";
 
 const createApp = (): express.Application => {
     const app = express();
 
     // Log startup configuration
-    console.log("=================================");
-    console.log("PauseShop Server Starting...");
-    console.log("=================================");
-    console.log("Environment Variables:");
-    console.log(`NODE_ENV: ${process.env.NODE_ENV || "not set"}`);
-    console.log(`PORT: ${process.env.PORT || "not set"}`);
-    console.log(
-        `ANALYSIS_PROVIDER: "${process.env.ANALYSIS_PROVIDER || "not set"}"`,
-    );
 
     // Log provider-specific configuration
     const currentProvider = AnalysisProviderFactory.getCurrentProvider();
-    console.log(`Current Provider: ${currentProvider}`);
+    const providerConfig = AnalysisProviderFactory.getProviderConfig();
+    const isProviderConfigValid = !!providerConfig;
 
-    if (currentProvider === "openai") {
-        console.log("OpenAI Configuration:");
-        console.log(
-            `  API Key: ${process.env.OPENAI_API_KEY ? "Set (****)" : "NOT SET"}`,
-        );
-        console.log(
-            `  Model: ${process.env.OPENAI_MODEL || "gpt-4o-mini (default)"}`,
-        );
-        console.log(
-            `  Max Tokens: ${process.env.OPENAI_MAX_TOKENS || "1000 (default)"}`,
-        );
-    } else if (currentProvider === "requesty") {
-        console.log("Requesty Configuration:");
-        console.log(
-            `  API Key: ${process.env.REQUESTY_API_KEY ? "Set (****)" : "NOT SET"}`,
-        );
-        console.log(
-            `  Model: ${process.env.REQUESTY_MODEL || "openai/gpt-4o-mini (default)"}`,
-        );
-        console.log(
-            `  Max Tokens: ${process.env.REQUESTY_MAX_TOKENS || "1000 (default)"}`,
-        );
-        console.log(
-            `  Site URL: ${process.env.REQUESTY_SITE_URL || "not set"}`,
-        );
-        console.log(
-            `  Site Name: ${process.env.REQUESTY_SITE_NAME || "not set"}`,
-        );
-    }
+    if (currentProvider === AnalysisProvider.OPENAI) { /* No specific action for OpenAI provider */ }
+    else if (currentProvider === AnalysisProvider.REQUESTY) { /* No specific action for Requesty provider */ }
 
     // Validate provider configuration
-    const validation = AnalysisProviderFactory.validateProviderConfig();
-    console.log(
-        `Provider Config: ${validation.isValid ? "✅ Valid" : "❌ Invalid - " + validation.error}`,
-    );
-    console.log("============================================================================");
 
     // Set app locals
     app.locals.startTime = new Date();
     app.locals.version = getVersion();
+    app.locals.provider = currentProvider;
+    app.locals.providerConfigValid = isProviderConfigValid;
 
     // Trust proxy (for accurate IP addresses)
     app.set("trust proxy", 1);

@@ -46,7 +46,7 @@ export const getEnvironment = (): string => {
 export const getVersion = (): string => {
     try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const pkg = require("../../package.json");
+        const pkg = require("../../package.json") as { version?: string };
         return pkg.version || "1.0.0";
     } catch {
         return "1.0.0";
@@ -59,3 +59,5 @@ export const getVersion = (): string => {
 export const isDevelopment = (): boolean => {
     return getEnvironment() === "development";
 };
+
+export * from "./logger";

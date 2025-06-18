@@ -38,7 +38,6 @@ export async function loadPrompt(): Promise<string> {
         promptCache = promptContent.trim();
         return promptCache;
     } catch (error) {
-        console.error("[ANALYSIS_UTILS] Error loading prompt:", error);
         throw new Error("Failed to load image analysis prompt");
     }
 }
@@ -60,50 +59,79 @@ export function extractJSONFromResponse(response: string): string {
  * Validate and sanitize products array
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function validateAndSanitizeProducts(products: any[]): Product[] {
+export function validateAndSanitizeProducts(products: unknown[]): Product[] {
     return products
-        .filter((product) => isValidProduct(product))
+        .filter((product): product is RawProductData => isValidProduct(product))
         .map((product) => sanitizeProduct(product));
+}
+
+/**
+ * Define a type for raw product data from API responses
+ */
+interface RawProductData {
+    name?: unknown;
+    iconCategory?: unknown;
+    category?: unknown;
+    brand?: unknown;
+    primaryColor?: unknown;
+    secondaryColors?: unknown;
+    features?: unknown;
+    targetGender?: unknown;
+    searchTerms?: unknown;
+    confidence?: unknown;
 }
 
 /**
  * Check if product has all required fields
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isValidProduct(product: any): boolean {
+function isValidProduct(product: unknown): boolean {
+    if (!product || typeof product !== "object") return false;
+    
+    const p = product as RawProductData;
+    
     return (
-        typeof product === "object" &&
-        typeof product.name === "string" &&
-        typeof product.iconCategory === "string" &&
-        typeof product.category === "string" &&
-        typeof product.brand === "string" &&
-        typeof product.primaryColor === "string" &&
-        Array.isArray(product.secondaryColors) &&
-        Array.isArray(product.features) &&
-        typeof product.targetGender === "string" &&
-        typeof product.searchTerms === "string" &&
-        typeof product.confidence === "number" &&
-        product.confidence >= 1 &&
-        product.confidence <= 10
+        typeof p.name === "string" &&
+        typeof p.iconCategory === "string" &&
+        typeof p.category === "string" &&
+        typeof p.brand === "string" &&
+        typeof p.primaryColor === "string" &&
+        Array.isArray(p.secondaryColors) &&
+        Array.isArray(p.features) &&
+        typeof p.targetGender === "string" &&
+        typeof p.searchTerms === "string" &&
+        typeof p.confidence === "number" &&
+        p.confidence >= 1 &&
+        p.confidence <= 10
     );
 }
 
 /**
  * Sanitize and normalize product data
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function sanitizeProduct(product: any): Product {
+function sanitizeProduct(product: RawProductData): Product {
+    // We've already validated the types in isValidProduct, but we'll be extra careful here
+    const name = typeof product.name === 'string' ? product.name : '';
+    const iconCategory = typeof product.iconCategory === 'string' ? product.iconCategory : '';
+    const category = typeof product.category === 'string' ? product.category : '';
+    const brand = typeof product.brand === 'string' ? product.brand : '';
+    const primaryColor = typeof product.primaryColor === 'string' ? product.primaryColor : '';
+    const secondaryColors = Array.isArray(product.secondaryColors) ? product.secondaryColors : [];
+    const features = Array.isArray(product.features) ? product.features : [];
+    const targetGender = typeof product.targetGender === 'string' ? product.targetGender : '';
+    const searchTerms = typeof product.searchTerms === 'string' ? product.searchTerms : '';
+    const confidence = typeof product.confidence === 'number' ? product.confidence : 6;
+    
     return {
-        name: String(product.name).substring(0, 100).trim(),
-        iconCategory: validateIconCategory(product.iconCategory),
-        category: validateBroadCategory(product.category),
-        brand: String(product.brand).substring(0, 50).trim(),
-        primaryColor: String(product.primaryColor).substring(0, 30).trim(),
-        secondaryColors: sanitizeStringArray(product.secondaryColors, 30, 3),
-        features: sanitizeStringArray(product.features, 50, 5),
-        targetGender: validateTargetGender(product.targetGender),
-        searchTerms: String(product.searchTerms).substring(0, 200).trim(),
-        confidence: Math.max(1, Math.min(10, Math.round(Number(product.confidence) || 6))),
+        name: String(name).substring(0, 100).trim(),
+        iconCategory: validateIconCategory(iconCategory),
+        category: validateBroadCategory(category),
+        brand: String(brand).substring(0, 50).trim(),
+        primaryColor: String(primaryColor).substring(0, 30).trim(),
+        secondaryColors: sanitizeStringArray(secondaryColors, 30, 3),
+        features: sanitizeStringArray(features, 50, 5),
+        targetGender: validateTargetGender(targetGender),
+        searchTerms: String(searchTerms).substring(0, 200).trim(),
+        confidence: Math.max(1, Math.min(10, Math.round(Number(confidence) || 6))),
     };
 }
 
@@ -112,8 +140,8 @@ function sanitizeProduct(product: any): Product {
  */
 function validateIconCategory(iconCategory: string): IconCategory {
     // Ensure the icon category is one of the predefined product categories
-    return ICON_CATEGORIES.includes(iconCategory as IconCategory)
-        ? (iconCategory as IconCategory)
+    return ICON_CATEGORIES.includes(iconCategory)
+        ? (iconCategory)
         : ("other" as IconCategory); // Fallback to "other" if category is not in the list
 }
 
@@ -140,9 +168,8 @@ function validateTargetGender(targetGender: string): TargetGender {
 /**
  * Sanitize array of strings with length and count limits
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function sanitizeStringArray(
-    arr: any[],
+    arr: unknown,
     maxLength: number,
     maxCount: number,
 ): string[] {
@@ -155,19 +182,46 @@ function sanitizeStringArray(
 }
 
 /**
+ * Type for API errors with common properties
+ */
+interface ApiErrorLike {
+    status?: number;
+    code?: string;
+    message?: string;
+}
+
+/**
  * Handle API errors with service-specific prefixes
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function handleAPIError(error: any, servicePrefix: string): never {
-    if (error?.status === 401) {
+export function handleAPIError(error: unknown, servicePrefix: string): never {
+    // Try to extract useful information from the error
+    const apiError: ApiErrorLike = {};
+    
+    if (error && typeof error === 'object') {
+        const err = error as Record<string, unknown>;
+        
+        if (typeof err.status === 'number') {
+            apiError.status = err.status;
+        }
+        
+        if (typeof err.code === 'string') {
+            apiError.code = err.code;
+        }
+        
+        if (typeof err.message === 'string') {
+            apiError.message = err.message;
+        }
+    }
+
+    if (apiError.status === 401) {
         throw new Error(`${servicePrefix}_AUTH_ERROR`);
     }
-    if (error?.status === 429) {
+    if (apiError.status === 429) {
         throw new Error(`${servicePrefix}_RATE_LIMIT`);
     }
-    if (error?.code === "ECONNRESET" || error?.code === "ETIMEDOUT") {
+    if (apiError.code === "ECONNRESET" || apiError.code === "ETIMEDOUT") {
         throw new Error(`${servicePrefix}_TIMEOUT`);
     }
 
-    throw new Error(`${servicePrefix}_API_ERROR`);
+    throw new Error(`${servicePrefix}_API_ERROR${apiError.message ? ': ' + apiError.message : ''}`);
 }

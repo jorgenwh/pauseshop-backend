@@ -36,8 +36,10 @@ export interface AppLocals {
     version: string;
 }
 
+// Augment Express namespace
 declare global {
-    namespace Express {
-        interface Locals extends AppLocals {}
+    // Using module augmentation instead of namespace
+    interface Express {
+        Locals: AppLocals;
     }
 }

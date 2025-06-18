@@ -12,8 +12,9 @@ import {
 } from "../utils";
 import { asyncWrapper } from "../middleware";
 
-const healthCheck = async (req: Request, res: Response): Promise<void> => {
-    const startTime = req.app.locals.startTime;
+const healthCheck = (req: Request, res: Response): void => {
+    // Safely cast the startTime to a Date object
+    const startTime = req.app.locals.startTime as Date;
 
     const healthResponse: HealthResponse = {
         status: "healthy",

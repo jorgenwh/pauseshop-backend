@@ -12,6 +12,8 @@ const router = Router();
 router.get("/health", healthCheckHandler);
 
 // Streaming image analysis endpoint (only endpoint available)
-router.post("/analyze/stream", analyzeImageStreamingHandler);
+router.post("/analyze/stream", (req, res, next) => {
+  void analyzeImageStreamingHandler(req, res).catch(next);
+});
 
 export default router;
