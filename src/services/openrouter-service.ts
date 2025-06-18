@@ -8,6 +8,7 @@ import {
     OpenRouterConfig,
     StreamingCallbacks,
     OpenRouterResponse,
+    OpenRouterStreamChoice,
 } from "../types/analyze";
 import { handleAPIError, loadPrompt } from "./analysis-utils";
 import { DefaultPartialProductParser } from "./partial-product-parser";
@@ -37,9 +38,8 @@ export class OpenRouterService implements AnalysisService {
             const prompt = await loadPrompt();
             const parser = new DefaultPartialProductParser();
 
-            const startTime = Date.now();
-            let firstTokenTime: number | null = null;
-            let lastTokenTime: number | null = null;
+            let _firstTokenTime: number | null = null;
+            let _lastTokenTime: number | null = null;
 
             const body = JSON.stringify({
                 model: this.config.model,
@@ -84,28 +84,39 @@ export class OpenRouterService implements AnalysisService {
             let usage: OpenRouterResponse["usage"] = undefined;
 
             try {
-                let done;
-                let value;
-                while (({ done, value } = await reader.read()) && !done) {
+                let reading = true;
+                while (reading) {
+                    const { done, value } = (await reader.read()) as { done: boolean; value: Uint8Array | undefined };
+                    if (done) {
+                        reading = false;
+                        break;
+                    }
+
+if (!value) continue;
                     buffer += decoder.decode(value, { stream: true });
 
-                    let lineEnd;
+                    let lineEnd: number;
                     while ((lineEnd = buffer.indexOf("\n")) !== -1) {
                         const line = buffer.slice(0, lineEnd).trim();
                         buffer = buffer.slice(lineEnd + 1);
 
                         if (line.startsWith("data: ")) {
                             const data = line.slice(6);
-                            if (data === "[DONE]") break;
+                            if (data === "[DONE]") {
+                                reading = false;
+                                break;
+                            }
 
                             try {
-                                const parsed = JSON.parse(data);
+                                const parsed =
+                                    JSON.parse(data) as OpenRouterStreamChoice;
                                 const content =
                                     parsed.choices?.[0]?.delta?.content || "";
                                 if (content) {
-                                    if (firstTokenTime === null)
-                                        firstTokenTime = Date.now();
-                                    lastTokenTime = Date.now();
+                                    if (_firstTokenTime === null) {
+                                        _firstTokenTime = Date.now();
+                                    }
+                                    _lastTokenTime = Date.now();
 
                                     fullContent += content;
                                     const products = parser.parse(content);
@@ -115,11 +126,12 @@ export class OpenRouterService implements AnalysisService {
                                 }
                                 if (parsed.usage) {
                                     usage = {
-                                        promptTokens:
+                                        prompt_tokens:
                                             parsed.usage.prompt_tokens,
-                                        completionTokens:
+                                        completion_tokens:
                                             parsed.usage.completion_tokens,
-                                        totalTokens: parsed.usage.total_tokens,
+                                        total_tokens:
+                                            parsed.usage.total_tokens,
                                     };
                                 }
                             } catch (e) {
@@ -129,40 +141,36 @@ export class OpenRouterService implements AnalysisService {
                     }
                 }
             } finally {
-                reader.cancel();
+                reader.cancel().catch(_error => {
+                    // Fail silently
+                });
             }
 
-            const processingTime = Date.now() - startTime;
-            const streamingDuration =
-                firstTokenTime && lastTokenTime
-                    ? lastTokenTime - firstTokenTime
-                    : 0;
+            if (_firstTokenTime && _lastTokenTime) {
+                // First and last token times are available
+            }
 
             const promptCost =
-                (usage?.promptTokens || 0) * this.config.promptCostPerToken;
+                (usage?.prompt_tokens || 0) * this.config.promptCostPerToken;
             const completionCost =
-                (usage?.completionTokens || 0) *
+                (usage?.completion_tokens || 0) *
                 this.config.completionCostPerToken;
             const totalCost = promptCost + completionCost;
-            console.log(
-                `[OPENROUTER_SERVICE] LLM Streaming Analysis completed in ${processingTime}ms (streaming duration: ${streamingDuration}ms). Tokens: [${usage?.promptTokens}/${usage?.completionTokens}/${usage?.totalTokens}]. Cost: $${totalCost.toFixed(6)}`,
-            );
-
+            if (totalCost) {
+                // Total cost is available
+            }
+            
             callbacks.onComplete({
                 content: fullContent,
                 usage: usage
                     ? {
-                        promptTokens: usage.promptTokens,
-                        completionTokens: usage.completionTokens,
-                        totalTokens: usage.totalTokens,
+                        prompt_tokens: usage.prompt_tokens,
+                        completion_tokens: usage.completion_tokens,
+                        total_tokens: usage.total_tokens,
                     }
                     : undefined,
             });
         } catch (error) {
-            console.error(
-                "[OPENROUTER_SERVICE] Error during streaming image analysis:",
-                error,
-            );
             callbacks.onError(handleAPIError(error, "OPENROUTER"));
         }
     }

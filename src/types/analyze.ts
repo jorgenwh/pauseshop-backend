@@ -76,11 +76,24 @@ export interface OpenRouterConfig {
 export interface OpenRouterResponse {
     content: string;
     usage?: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
     };
     reasoning?: string; // OpenRouter specific
+}
+
+export interface OpenRouterStreamChoice {
+    choices?: {
+        delta?: {
+            content?: string;
+        };
+    }[];
+    usage?: {
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+    };
 }
 
 export interface GeminiConfig {
@@ -101,6 +114,12 @@ export interface GeminiResponse {
         thoughtsTokenCount?: number;
         candidatesTokenCount?: number;
     };
+}
+
+export interface TokenUsage {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
 }
 
 export interface AnalyzeErrorResponse {
