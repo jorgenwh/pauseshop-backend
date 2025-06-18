@@ -22,6 +22,8 @@ const createApp = (): express.Application => {
 
     // Log provider-specific configuration
     const currentProvider = AnalysisProviderFactory.getCurrentProvider();
+    const providerConfig = AnalysisProviderFactory.getProviderConfig();
+    const isProviderConfigValid = !!providerConfig;
 
     if (currentProvider === AnalysisProvider.OPENAI) { /* No specific action for OpenAI provider */ }
     else if (currentProvider === AnalysisProvider.REQUESTY) { /* No specific action for Requesty provider */ }
@@ -31,6 +33,8 @@ const createApp = (): express.Application => {
     // Set app locals
     app.locals.startTime = new Date();
     app.locals.version = getVersion();
+    app.locals.provider = currentProvider;
+    app.locals.providerConfigValid = isProviderConfigValid;
 
     // Trust proxy (for accurate IP addresses)
     app.set("trust proxy", 1);

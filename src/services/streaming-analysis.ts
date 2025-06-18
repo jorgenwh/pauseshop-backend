@@ -8,6 +8,7 @@ import {
     OpenRouterResponse,
 } from "../types/analyze";
 import { AnalysisProviderFactory } from "./analysis-provider-factory";
+import { logger } from "../utils/logger";
 
 interface StreamingAnalysisCallbacks extends StreamingCallbacks {
     onStart?: () => void;
@@ -16,9 +17,11 @@ interface StreamingAnalysisCallbacks extends StreamingCallbacks {
 
 export class StreamingAnalysisService {
     private provider: AnalysisService;
+    private providerName: string;
 
     constructor() {
         this.provider = AnalysisProviderFactory.createProvider();
+        this.providerName = AnalysisProviderFactory.getCurrentProvider();
     }
 
     public async analyzeImageStreaming(
@@ -27,21 +30,26 @@ export class StreamingAnalysisService {
     ): Promise<void> {
         const products: Product[] = [];
 
+        logger.log("[ANALYZE_STREAM] =================================");
+        logger.log("[ANALYZE_STREAM] Starting streaming image analysis request");
+        logger.log(`[ANALYZE_STREAM] Provider: ${this.providerName}`);
+        logger.log("[ANALYZE_STREAM] =================================");
+
         callbacks.onStart?.();
 
         try {
             await this.provider.analyzeImageStreaming(imageData, {
                 onProduct: (product: Product) => {
-                    // console.info(
-                    //     `[${new Date()
-                    //         .toISOString()
-                    //         .substr(
-                    //             11,
-                    //             12
-                    //         )}] ${product.name} (category: ${product.category}, icon: ${product.iconCategory}, confidence: ${product.confidence})`
-                    // );
-                    // console.info(`Search term: ${product.searchTerms}`);
-                    // console.info('===========================');
+                    logger.log(
+                        `[${new Date()
+                            .toTimeString()
+                            .slice(
+                                0,
+                                8
+                            )}] ${product.name} (category: ${product.category}, icon: ${product.iconCategory}, confidence: ${product.confidence})`
+                    );
+                    logger.log(`Search term: ${product.searchTerms}`);
+                    logger.log('===========================');
                     products.push(product);
                     callbacks.onProduct(product);
                 },

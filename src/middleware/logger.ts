@@ -3,37 +3,30 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import { logger } from "../utils/logger";
 
 export const requestLogger = (
-    _req: Request,
-    _res: Response,
+    req: Request,
+    res: Response,
     next: NextFunction,
 ): void => {
-    // const _startTime = Date.now();
-    // const { method: _method, url: _url, ip: _ip } = _req;
+    const startTime = Date.now();
+    const { method, url, ip } = req;
 
     // Log request start
-    // console.log(`[${new Date().toISOString()}] ${method} ${url} - ${ip}`);
+    logger.http(`${method} ${url} - ${ip}`);
 
-    // Override _res.end to log response
-    const originalEnd = _res.end.bind(_res);
-    _res.end = function(this: Response, ...args: Parameters<typeof originalEnd>): Response {
-        // const _duration = Date.now() - _startTime;
-        // const { statusCode: _statusCode } = this;
-        // const _statusColor =
-        //     _statusCode >= 400
-        //         ? "\x1b[31m"
-        //         : _statusCode >= 300
-        //             ? "\x1b[33m"
-        //             : "\x1b[32m";
+    // Override res.end to log response
+    const originalEnd = res.end.bind(res);
+    res.end = function(this: Response, ...args: Parameters<typeof originalEnd>): Response {
+        const duration = Date.now() - startTime;
+        const { statusCode } = this;
 
-        // console.log(
-        //     `[${new Date().toISOString()}] ${method} ${url} - ${statusColor}${statusCode}\x1b[0m - ${duration}ms`,
-        // );
+        logger.http(`${method} ${url} - ${statusCode} - ${duration}ms`);
 
         // Call original end method with spread operator
         return originalEnd.apply(this, args);
-    } as typeof _res.end;
+    } as typeof res.end;
 
     next();
 };

@@ -12,6 +12,7 @@ import {
 } from "../types/analyze";
 import { loadPrompt, handleAPIError } from "./analysis-utils";
 import { DefaultPartialProductParser } from "./partial-product-parser";
+import { logger } from "../utils/logger";
 
 export class GeminiService implements AnalysisService {
     private client: GoogleGenerativeAI;
@@ -30,6 +31,7 @@ export class GeminiService implements AnalysisService {
         imageData: string,
         callbacks: StreamingCallbacks,
     ): Promise<void> {
+        const startTime = Date.now();
         try {
             const prompt = await loadPrompt();
             const parser = new DefaultPartialProductParser();
@@ -89,9 +91,8 @@ export class GeminiService implements AnalysisService {
                 }
             }
 
-            if (firstTokenTime && lastTokenTime) {
-                // First and last token times are available
-            }
+            const processingTime = Date.now() - startTime;
+            const streamingDuration = lastTokenTime && firstTokenTime ? lastTokenTime - firstTokenTime : 0;
 
             const usageMetadata = lastChunk?.usageMetadata;
             const promptTokenCount = usageMetadata?.promptTokenCount || 0;
@@ -106,13 +107,10 @@ export class GeminiService implements AnalysisService {
             const promptCost = promptTokenCount * this.config.promptCostPerToken;
             const completionCost = candidatesTokenCount * this.config.completionCostPerToken;
             const totalCost = promptCost + completionCost;
-            if (totalCost) {
-                // Total cost is available
-            }
 
-            // console.log(
-            //     `[GEMINI_SERVICE] LLM Streaming Analysis completed in ${_processingTime}ms (streaming duration: ${_streamingDuration}ms). Tokens: [${promptTokenCount}/${candidatesTokenCount}/${totalTokenCount}]. Cost: $${_totalCost.toFixed(6)}`,
-            // );
+            logger.log(
+                `[GEMINI_SERVICE] LLM Streaming Analysis completed in ${processingTime}ms (streaming duration: ${streamingDuration}ms). Tokens: [${promptTokenCount}/${candidatesTokenCount}/${totalTokenCount}]. Cost: $${totalCost.toFixed(6)}`,
+            );
 
             callbacks.onComplete({
                 content: fullContent,
@@ -127,10 +125,10 @@ export class GeminiService implements AnalysisService {
                     : undefined,
             });
         } catch (error) {
-            // console.error(
-            //     "[GEMINI_SERVICE] Error during streaming image analysis:",
-            //     error,
-            // );
+            logger.error(
+                "[GEMINI_SERVICE] Error during streaming image analysis:",
+                error,
+            );
             callbacks.onError(handleAPIError(error, "GEMINI"));
         }
     }

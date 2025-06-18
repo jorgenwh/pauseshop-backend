@@ -59,3 +59,5 @@ export const getVersion = (): string => {
 export const isDevelopment = (): boolean => {
     return getEnvironment() === "development";
 };
+
+export * from "./logger";

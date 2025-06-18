@@ -257,4 +257,33 @@ export class AnalysisProviderFactory {
             };
         }
     }
+
+    /**
+     * Get the configuration for the current provider
+     */
+    static getProviderConfig():
+        | OpenAIConfig
+        | RequestyConfig
+        | GeminiConfig
+        | OpenRouterConfig
+        | undefined {
+        try {
+            const provider = AnalysisProviderFactory.getCurrentProvider();
+
+            switch (provider) {
+            case AnalysisProvider.OPENAI:
+                return getOpenAIConfig();
+            case AnalysisProvider.REQUESTY:
+                return getRequestyConfig();
+            case AnalysisProvider.GEMINI:
+                return getGeminiConfig();
+            case AnalysisProvider.OPENROUTER:
+                return getOpenRouterConfig();
+            default:
+                return undefined;
+            }
+        } catch (error) {
+            return undefined;
+        }
+    }
 }
