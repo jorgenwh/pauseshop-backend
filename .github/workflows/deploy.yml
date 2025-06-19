@@ -1,0 +1,95 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]  # Deploy when pushing to main branch
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  REPOSITORY: ${{ secrets.GCP_REPOSITORY }}
+  SERVICE_NAME: pauseshop-server
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Authenticate Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      # Create a unique tag for the image using commit SHA and timestamp
+      - name: Set image tag
+        run: |
+          echo "IMAGE_TAG=${{ github.sha }}-$(date +%s)" >> $GITHUB_ENV
+
+      # Build the Docker image (no API key needed during build)
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} .
+
+      # Push the image to Google Artifact Registry
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }}
+
+      # Create or update the secret in Google Cloud Secret Manager
+      - name: Manage API Key Secret
+        run: |
+          # Check if secret exists
+          if gcloud secrets describe gemini-api-key --project=${{ env.PROJECT_ID }} &> /dev/null; then
+            echo "Secret exists, updating it"
+            echo -n "${{ secrets.GEMINI_API_KEY }}" | gcloud secrets versions add gemini-api-key --data-file=- --project=${{ env.PROJECT_ID }}
+          else
+            echo "Creating new secret"
+            echo -n "${{ secrets.GEMINI_API_KEY }}" | gcloud secrets create gemini-api-key --data-file=- --project=${{ env.PROJECT_ID }}
+          fi
+
+      # Get the Cloud Run service account to grant it access to the secret
+      - name: Get service account
+        run: |
+          # If service doesn't exist yet, we'll use the default compute service account
+          if gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} &> /dev/null; then
+            SERVICE_ACCOUNT=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} --format="value(serviceAccountEmail)")
+          else
+            SERVICE_ACCOUNT=$(gcloud iam service-accounts list --project=${{ env.PROJECT_ID }} --filter="displayName:Compute Engine default service account" --format="value(email)")
+          fi
+          echo "SERVICE_ACCOUNT=$SERVICE_ACCOUNT" >> $GITHUB_ENV
+
+      # Grant the service account access to the secret
+      - name: Grant secret access
+        run: |
+          gcloud secrets add-iam-policy-binding gemini-api-key \
+            --member=serviceAccount:${{ env.SERVICE_ACCOUNT }} \
+            --role=roles/secretmanager.secretAccessor \
+            --project=${{ env.PROJECT_ID }}
+
+      # Deploy to Cloud Run with environment variables and secret
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars="ANALYSIS_PROVIDER=gemini,GEMINI_MODEL=gemini-2.5-flash-lite-preview-06-17,GEMINI_MAX_TOKENS=5000,GEMINI_THINKING_BUDGET=0,NODE_ENV=production" \
+            --set-secrets="GEMINI_API_KEY=gemini-api-key:latest"
+
+      # Output the deployed service URL
+      - name: Output Service URL
+        run: |
+          echo "Deployed to: $(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} --format='value(status.url)')"
