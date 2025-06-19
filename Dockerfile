@@ -4,11 +4,8 @@ FROM node:18-slim AS builder
 # Create app directory
 WORKDIR /usr/src/app
 
-# Define build arguments
-ARG SERVER_MODE=prod
-
-# Set environment variables from build args
-ENV SERVER_MODE=${SERVER_MODE}
+# Set environment variables
+ENV SERVER_MODE=prod
 
 # Copy package files and install dependencies
 COPY package*.json ./
@@ -25,9 +22,8 @@ FROM node:18-slim
 
 WORKDIR /usr/src/app
 
-# Pass the build arg to the production stage
-ARG SERVER_MODE=prod
-ENV SERVER_MODE=${SERVER_MODE}
+# Set environment variables
+ENV SERVER_MODE=prod
 
 # Copy package files and install only production dependencies
 COPY package*.json ./
