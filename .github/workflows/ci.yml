@@ -33,3 +33,9 @@ jobs:
 
             - name: Build
               run: npm run build
+
+            - name: Docker Build Test (with dev mode)
+              run: docker build --build-arg SERVER_MODE=dev -t test-image .
+
+            - name: Docker Build Test (with prod mode)
+              run: docker build --build-arg SERVER_MODE=prod -t test-image .

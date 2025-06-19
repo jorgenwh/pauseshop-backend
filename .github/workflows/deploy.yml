@@ -40,10 +40,10 @@ jobs:
         run: |
           echo "IMAGE_TAG=${{ github.sha }}-$(date +%s)" >> $GITHUB_ENV
 
-      # Build the Docker image (no API key needed during build)
+      # Build the Docker image with SERVER_MODE set to prod for production deployment
       - name: Build Docker image
         run: |
-          docker build -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} .
+          docker build --build-arg SERVER_MODE=prod -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }} .
 
       # Push the image to Google Artifact Registry
       - name: Push Docker image
