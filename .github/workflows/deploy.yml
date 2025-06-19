@@ -43,6 +43,7 @@ jobs:
       # Push the image to Google Artifact Registry
       - name: Push Docker image
         run: |
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.SERVICE_NAME }}:${{ env.IMAGE_TAG }}
 
       # Create or update the secret in Google Cloud Secret Manager
