@@ -19,11 +19,20 @@ export async function loadPrompt(): Promise<string> {
         return promptCache;
     }
 
+    let serverMode = process.env.SERVER_MODE || "dev";
+    if (serverMode !== "prod" && serverMode !== "dev") {
+        console.warn(
+            `Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`,
+        );
+        serverMode = "prod";
+    }
+
     try {
         const promptPath = resolve(
             __dirname,
-            // "../prompts/product-analysis-v3.txt",
-            "/usr/src/app/src/prompts/product-analysis-v3.txt",
+            serverMode === "prod"
+                ? "/usr/src/app/src/prompts/product-analysis-v3.txt"
+                : "../prompts/product-analysis-v3.txt"
         );
         let promptContent = await fs.readFile(promptPath, "utf-8");
 
