@@ -62,16 +62,13 @@ jobs:
             echo -n "${{ secrets.GEMINI_API_KEY }}" | gcloud secrets create gemini-api-key --data-file=- --project=${{ env.PROJECT_ID }}
           fi
 
-      # Get the Cloud Run service account to grant it access to the secret
-      - name: Get service account
+      # Extract service account email from GCP_SA_KEY
+      - name: Extract service account email
         run: |
-          # If service doesn't exist yet, we'll use the default compute service account
-          if gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} &> /dev/null; then
-            SERVICE_ACCOUNT=$(gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --project=${{ env.PROJECT_ID }} --format="value(serviceAccountEmail)")
-          else
-            SERVICE_ACCOUNT=$(gcloud iam service-accounts list --project=${{ env.PROJECT_ID }} --filter="displayName:Compute Engine default service account" --format="value(email)")
-          fi
+          # Extract the client_email field from the JSON credentials
+          SERVICE_ACCOUNT=$(echo '${{ secrets.GCP_SA_KEY }}' | jq -r '.client_email')
           echo "SERVICE_ACCOUNT=$SERVICE_ACCOUNT" >> $GITHUB_ENV
+          echo "Using service account: $SERVICE_ACCOUNT"
 
       # Grant the service account access to the secret
       - name: Grant secret access
