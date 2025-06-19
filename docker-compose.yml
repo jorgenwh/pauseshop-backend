@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  pauseshop-server:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.docker.local
+    # Fallback to .env.docker if .env.docker.local doesn't exist
+    # This ensures the service can start without API keys for CI/CD
+    # For development with hot-reload, you can uncomment these:
+    # volumes:
+    #   - ./src:/usr/src/app/src
+    #   - ./dist:/usr/src/app/dist
+    # command: npm run dev
