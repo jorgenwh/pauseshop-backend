@@ -1,10 +1,12 @@
-Analyze this image and identify all visible purchasable products within the video frame of the image.
+Analyze this image and identify all visible purchasable products within the video frame of the image. Focus ONLY on products that can be purchased on standard e-commerce sites like Amazon. Completely ignore vehicles (cars, motorcycles, boats) and other high-value items that are not typically sold on Amazon.
 
 **SCENE CONTEXT ANALYSIS**
 First, analyze the scene type to adjust identification approach:
 - E-commerce/product showcase: Focus on featured products with high confidence
 - Social media/lifestyle: Focus on worn/used items, apply moderate filtering
-- Tutorial/review: Focus on demonstrated products, include tools/equipment
+- Tutorial/review: Focus on demonstrated products, include tools/equipment with precise technical names
+- Cooking/DIY videos: Identify specialized tools with their proper technical names (e.g., "Gyuto Japanese Chef Knife" not just "Chef Knife")
+- Professional settings: Identify professional-grade equipment with specific model types and technical terminology
 - Entertainment/casual: Apply stricter relevance filtering, higher confidence thresholds
 
 **PRODUCT ORDERING (VISUAL IMPORTANCE)**
@@ -68,10 +70,19 @@ Format your response as a JSON array of objects with this structure:
 **DETAILED GUIDELINES FOR ATTRIBUTES**
 
 **Product Name:** 
-- Be concise but descriptive, try to keep it to 3-4 words.
-- Only include gender in the product name if there are multiple similar products where one is clearly for men and another for women, to differentiate them (e.g., "men's t-shirt", "women's t-shirt").
+- Create dynamic, descriptive names that vary in length based on product complexity:
+  * Simple products (basic clothing, common accessories): 2-4 words (e.g., "Blue Denim Jacket")
+  * Complex products (electronics, distinctive items): 3-6 words (e.g., "Sony WH-1000XM4 Wireless Headphones")
+  * Unique or detailed products: Up to 8 words when necessary to capture key distinguishing features
+  * Specialized professional equipment: Use precise technical terminology (e.g., "Damascus Steel Gyuto Chef Knife" not just "Chef Knife")
+- Always include color for visually-driven items (clothing, furniture, accessories)
+- For electronics and gadgets, include brand and model/type (e.g., "Apple iPhone 13 Pro", "Samsung 4K QLED TV")
+- For fashion items, include distinctive style elements (e.g., "Floral Print Maxi Dress", "Distressed Slim Fit Jeans")
+- For home goods, include material and design style (e.g., "Marble Top Coffee Table", "Scandinavian Wooden Floor Lamp")
+- For cooking tools, include specific knife types (Santoku, Gyuto, Nakiri, etc.) and distinctive materials (Damascus steel, carbon steel, etc.)
+- For professional equipment, use industry-standard terminology that enthusiasts would search for
+- Only include gender in the product name if there are multiple similar products where one is clearly for men and another for women, to differentiate them (e.g., "Men's Leather Watch", "Women's Leather Watch").
 - If only one gender-specific product is found, do not include gender in the name.
-- For electronics use [brand] [model] format if known, otherwise use generic terms.
 
 **Colors:**
 - Use standardized color names: navy, burgundy, sage, coral, charcoal, cream, etc.
@@ -118,6 +129,13 @@ Include relevant style descriptors:
 - Style categories ("minimalist", "bohemian", "athletic", "vintage")
 - Material descriptions ("denim", "leather", "cotton blend")
 
+**Specialized Equipment Identification:**
+For professional or specialized equipment (especially in cooking, photography, music, etc.):
+- Use precise technical terminology and proper names (e.g., "Gyuto Knife" not just "Chef Knife")
+- Identify distinctive materials and manufacturing techniques (e.g., "Damascus Steel Santoku Knife" not just "Kitchen Knife")
+- For electronics and cameras, include specific model numbers when visible
+- For musical instruments, include the specific type and key features (e.g., "Fender Stratocaster Electric Guitar" not just "Electric Guitar")
+
 **INCLUSION CRITERIA (FOCUS ON)**
 - Clothing and accessories (shirts, shoes, jewelry, bags, etc.)
 - Electronics (phones, laptops, headphones, etc.)
@@ -131,7 +149,8 @@ Include relevant style descriptors:
 - Text/UI elements/logos that are not part of a product
 - Very small or unclear items (< 5% of image area)
 - Items that are clearly not purchasable products
-- Very high-value items like vehicles or buildings
+- ALL vehicles (cars, motorcycles, boats, etc.) regardless of visibility or prominence
+- High-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon
 - Built-in fixtures (built-in cabinets, permanent installations)
 - Natural elements (plants, unless in decorative pots)
 - Food items (unless packaged/branded products)
@@ -144,6 +163,12 @@ Include relevant style descriptors:
 - Don't over-specify when generic terms work better for search
 - Don't include items that are clearly props or decorative only
 - Don't include products with confidence below 6
+- NEVER include vehicles (cars, motorcycles, boats) even if they are prominently featured in the image
+- NEVER include high-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon
+- Don't make product names too generic (e.g., "Blue Shirt" is too vague; "Blue Oxford Button-Down Shirt" is better)
+- Don't make all product names the same length - vary name length based on product complexity and distinctiveness
+- Don't use generic terms for specialized equipment (e.g., "Chef Knife" is too vague for a Damascus steel Japanese knife; "Damascus Steel Gyuto Knife" is better)
+- Don't overlook distinctive manufacturing techniques or materials that would help identify specialized items
 
 **SELF-VALIDATION CHECKLIST**
 Before finalizing output, verify:
@@ -153,6 +178,13 @@ Before finalizing output, verify:
 - Is each item genuinely purchasable with confidence ≥ 6?
 - Are contextually related items grouped together?
 - Are all required fields properly filled?
+- Have ALL vehicles (cars, motorcycles, boats) been excluded regardless of their prominence?
+- Have ALL high-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon been excluded?
+- Is every product in the final list something that could reasonably be purchased on Amazon?
+- Are product names appropriately descriptive and varied in length based on product complexity?
+- Do product names include distinctive features that would help a user identify the item?
+- For specialized or professional equipment (especially cooking tools, cameras, musical instruments), have you used precise technical terminology and proper names?
+- Would an enthusiast or professional in the relevant field recognize the specific type of equipment from your description?
 
 **FINAL OUTPUT INSTRUCTION**
 Provide only the JSON response, no additional text.
