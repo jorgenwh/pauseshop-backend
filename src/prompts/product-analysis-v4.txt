@@ -1,0 +1,190 @@
+Analyze this image and identify all visible purchasable products within the video frame of the image. Focus ONLY on products that can be purchased on standard e-commerce sites like Amazon. Completely ignore vehicles (cars, motorcycles, boats) and other high-value items that are not typically sold on Amazon.
+
+**SCENE CONTEXT ANALYSIS**
+First, analyze the scene type to adjust identification approach:
+- E-commerce/product showcase: Focus on featured products with high confidence
+- Social media/lifestyle: Focus on worn/used items, apply moderate filtering
+- Tutorial/review: Focus on demonstrated products, include tools/equipment with precise technical names
+- Cooking/DIY videos: Identify specialized tools with their proper technical names (e.g., "Gyuto Japanese Chef Knife" not just "Chef Knife")
+- Professional settings: Identify professional-grade equipment with specific model types and technical terminology
+- Entertainment/casual: Apply stricter relevance filtering, higher confidence thresholds
+
+**PRODUCT ORDERING (VISUAL IMPORTANCE)**
+Return products in the following order of visual importance:
+1. PRIMARY FOCUS: Products that are centrally located, in sharp focus, well-lit, and clearly the main subject
+2. SECONDARY FOCUS: Products that are prominent but slightly off-center or in mid-ground
+3. BACKGROUND/PERIPHERAL: Products that are in background, partially obscured, or less prominent
+
+The JSON array order MUST reflect this visual importance: primary products first, then secondary, then background.
+Contextually related items must appear consecutively in the output array (e.g., items worn by same person, on same desk, or in same set).
+
+
+**CONFIDENCE ASSESSMENT**
+For each product, evaluate confidence (1-10) based on:
+- Visual clarity and focus (2-3 points)
+- Brand/model identifiability (2-3 points)
+- Purchasability likelihood (2-3 points)
+- Search term effectiveness (1-2 points)
+
+Only include products with confidence ≥ 6 unless scene has very few products (< 3 total).
+
+**AMBIGUITY RESOLUTION**
+For items that could be multiple products:
+- Generic containers → Only include if branded or distinctive
+- Multi-functional items → Choose the primary function
+- Sets/collections → List individual items if clearly separable
+- Custom/handmade items → Include only if commercially available equivalents exist
+
+**REQUIRED PRODUCT ATTRIBUTES**
+For each product, provide the following:
+1. Product name/description (include color if visible)
+2. Icon Category (MUST be one of the following: [LIST_OF_CATEGORIES_HERE])
+3. Category (MUST be one of the broad categories: 'clothing', 'electronics', 'furniture', 'accessories', 'footwear', 'home_decor', 'books_media', 'sports_fitness', 'beauty_personal_care', 'kitchen_dining', 'other')
+4. Brand (if visible/identifiable, include confidence level)
+5. Primary color (the main/dominant color using standardized color names)
+6. Secondary colors (if applicable)
+7. Key identifying features (style, material, pattern, etc.)
+8. Target gender/demographic (men, women, unisex, boy, girl)
+9. Optimized search terms for finding this product online
+10. Confidence score (6-10, products below 6 should be excluded)
+
+**JSON OUTPUT FORMAT**
+Format your response as a JSON array of objects with this structure:
+{
+    "products": [
+        {
+            "name": "product name with color",
+            "iconCategory": "icon category",
+            "category": "broad category",
+            "brand": "brand name or unknown",
+            "primaryColor": "main color",
+            "secondaryColors": ["color1", "color2"],
+            "features": ["style", "material", "pattern"],
+            "targetGender": "men" | "women" | "unisex" | "boy" | "girl",
+            "searchTerms": "optimized search terms for finding this product",
+            "confidence": 6-10
+        }
+    ]
+}
+
+**DETAILED GUIDELINES FOR ATTRIBUTES**
+
+**Product Name:** 
+- Create dynamic, descriptive names that vary in length based on product complexity:
+  * Simple products (basic clothing, common accessories): 2-4 words (e.g., "Blue Denim Jacket")
+  * Complex products (electronics, distinctive items): 3-6 words (e.g., "Sony WH-1000XM4 Wireless Headphones")
+  * Unique or detailed products: Up to 8 words when necessary to capture key distinguishing features
+  * Specialized professional equipment: Use precise technical terminology (e.g., "Damascus Steel Gyuto Chef Knife" not just "Chef Knife")
+- Always include color for visually-driven items (clothing, furniture, accessories)
+- For electronics and gadgets, include brand and model/type (e.g., "Apple iPhone 13 Pro", "Samsung 4K QLED TV")
+- For fashion items, include distinctive style elements (e.g., "Floral Print Maxi Dress", "Distressed Slim Fit Jeans")
+- For home goods, include material and design style (e.g., "Marble Top Coffee Table", "Scandinavian Wooden Floor Lamp")
+- For cooking tools, include specific knife types (Santoku, Gyuto, Nakiri, etc.) and distinctive materials (Damascus steel, carbon steel, etc.)
+- For professional equipment, use industry-standard terminology that enthusiasts would search for
+- Only include gender in the product name if there are multiple similar products where one is clearly for men and another for women, to differentiate them (e.g., "Men's Leather Watch", "Women's Leather Watch").
+- If only one gender-specific product is found, do not include gender in the name.
+
+**Colors:**
+- Use standardized color names: navy, burgundy, sage, coral, charcoal, cream, etc.
+- For patterns: "striped [colors]", "floral [base color]", "plaid [dominant colors]"
+- For gradients: "[primary] to [secondary] gradient"
+- For metallics: "rose gold", "brushed silver", "antique brass"
+- Always identify and include the primary color of items.
+- Include ALL visible colors in the search terms for multi-colored items.
+
+**Brand Identification:**
+- Look for logos, distinctive design patterns, recognizable silhouettes
+- Include partial brand matches ("appears to be [brand]")
+- Note when style suggests premium vs. budget tier
+- Use "unknown" when brand cannot be determined
+- Do your best to always identify the brand for electronics especially, as this is crucial for searchability.
+
+**Target Gender:**
+- For clothing: If you see a man wearing clothing, identify it as "men's" clothing.
+- For clothing: If you see a woman wearing clothing, identify it as "women's" clothing.
+- For clothing: If you see a child wearing clothing, identify it as "boy" or "girl" clothing.
+- Only mark as "unisex" if the item is truly gender-neutral.
+
+**Search Terms Strategy:**
+Optimize search terms for different product types:
+- Fashion: "[gender] [color] [type] [style/material]"
+- Electronics: "[brand] [model] [type]" 
+- Home goods: "[material] [color] [type] [style]"
+- Generic items: Use broad, commonly searched terms
+
+Examples: 
+- "men's navy blue cotton shorts"
+- "women's black tank top with green accents"
+- "Apple iPhone"
+- "wooden white desk lamp modern"
+
+**Product Specificity for Search Terms:**
+- For items where a generic description is useful for consumer search (e.g., clothing, general accessories), provide search terms even if the exact brand or model is unknown.
+- For items where a generic description is not useful for consumer search and requires high specificity for a meaningful result (e.g., specific electronics like laptops, beverages like wine bottles), do your best to determine the exact product type, brand, or model. Only provide search terms if you are highly confident in this specific identification.
+- If confidence is low, provide only very broad, non-specific terms or omit search terms entirely.
+
+**Style and Trend Context:**
+Include relevant style descriptors:
+- Current fashion trends ("oversized", "cropped", "high-waisted")
+- Style categories ("minimalist", "bohemian", "athletic", "vintage")
+- Material descriptions ("denim", "leather", "cotton blend")
+
+**Specialized Equipment Identification:**
+For professional or specialized equipment (especially in cooking, photography, music, etc.):
+- Use precise technical terminology and proper names (e.g., "Gyuto Knife" not just "Chef Knife")
+- Identify distinctive materials and manufacturing techniques (e.g., "Damascus Steel Santoku Knife" not just "Kitchen Knife")
+- For electronics and cameras, include specific model numbers when visible
+- For musical instruments, include the specific type and key features (e.g., "Fender Stratocaster Electric Guitar" not just "Electric Guitar")
+
+**INCLUSION CRITERIA (FOCUS ON)**
+- Clothing and accessories (shirts, shoes, jewelry, bags, etc.)
+- Electronics (phones, laptops, headphones, etc.)
+- Furniture and home decor
+- Visible branded items
+- Items that are clearly the focus of the scene
+- Items with clear commercial availability
+
+**EXCLUSION CRITERIA (IGNORE)**
+- Generic backgrounds (walls, floors, ceilings)
+- Text/UI elements/logos that are not part of a product
+- Very small or unclear items (< 5% of image area)
+- Items that are clearly not purchasable products
+- ALL vehicles (cars, motorcycles, boats, etc.) regardless of visibility or prominence
+- High-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon
+- Built-in fixtures (built-in cabinets, permanent installations)
+- Natural elements (plants, unless in decorative pots)
+- Food items (unless packaged/branded products)
+
+**COMMON MISTAKES TO AVOID**
+- Don't split single items with multiple colors/patterns into separate products (e.g., a tank top with green accents is ONE product)
+- Don't combine distinct clothing items or accessories into one product (e.g., a blazer and shirt worn together are TWO separate products)
+- Don't list multiple identical products if several are visible (e.g., three people wearing the same uniform should be listed as one product)
+- Don't include non-purchasable items (walls, floors, built-ins)
+- Don't over-specify when generic terms work better for search
+- Don't include items that are clearly props or decorative only
+- Don't include products with confidence below 6
+- NEVER include vehicles (cars, motorcycles, boats) even if they are prominently featured in the image
+- NEVER include high-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon
+- Don't make product names too generic (e.g., "Blue Shirt" is too vague; "Blue Oxford Button-Down Shirt" is better)
+- Don't make all product names the same length - vary name length based on product complexity and distinctiveness
+- Don't use generic terms for specialized equipment (e.g., "Chef Knife" is too vague for a Damascus steel Japanese knife; "Damascus Steel Gyuto Knife" is better)
+- Don't overlook distinctive manufacturing techniques or materials that would help identify specialized items
+
+**SELF-VALIDATION CHECKLIST**
+Before finalizing output, verify:
+- Are products ordered by visual importance?
+- Do search terms actually help find the product?
+- Are colors accurate and specific using standardized names?
+- Is each item genuinely purchasable with confidence ≥ 6?
+- Are contextually related items grouped together?
+- Are all required fields properly filled?
+- Have ALL vehicles (cars, motorcycles, boats) been excluded regardless of their prominence?
+- Have ALL high-value items (over $1,000) that cannot be purchased on standard e-commerce sites like Amazon been excluded?
+- Is every product in the final list something that could reasonably be purchased on Amazon?
+- Are product names appropriately descriptive and varied in length based on product complexity?
+- Do product names include distinctive features that would help a user identify the item?
+- For specialized or professional equipment (especially cooking tools, cameras, musical instruments), have you used precise technical terminology and proper names?
+- Would an enthusiast or professional in the relevant field recognize the specific type of equipment from your description?
+
+**FINAL OUTPUT INSTRUCTION**
+Provide only the JSON response, no additional text.
