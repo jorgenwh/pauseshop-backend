@@ -30,8 +30,8 @@ export async function loadPrompt(): Promise<string> {
         const promptPath = resolve(
             __dirname,
             serverMode === "prod"
-                ? "/usr/src/app/src/prompts/product-analysis-v3.txt"
-                : "../prompts/product-analysis-v3.txt"
+                ? "/usr/src/app/src/prompts/product-analysis-v4.txt"
+                : "../prompts/product-analysis-v4.txt"
         );
         let promptContent = await fs.readFile(promptPath, "utf-8");
 
