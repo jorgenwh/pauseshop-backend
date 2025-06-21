@@ -7,6 +7,7 @@ import { promises as fs } from "fs";
 import { resolve } from "path";
 import { Product, TargetGender, Category } from "../types/analyze";
 import { ICON_CATEGORIES, IconCategory } from "../config/icon-categories";
+import { logger } from "../utils/logger";
 
 // Shared prompt cache
 let promptCache: string | null = null;
@@ -21,9 +22,7 @@ export async function loadPrompt(): Promise<string> {
 
     let serverMode = process.env.SERVER_MODE || "dev";
     if (serverMode !== "prod" && serverMode !== "dev") {
-        console.warn(
-            `Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`,
-        );
+        logger.warn(`Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`);
         serverMode = "prod";
     }
 
@@ -31,8 +30,8 @@ export async function loadPrompt(): Promise<string> {
         const promptPath = resolve(
             __dirname,
             serverMode === "prod"
-                ? "/usr/src/app/src/prompts/product-analysis-v3.txt"
-                : "../prompts/product-analysis-v3.txt"
+                ? "/usr/src/app/src/prompts/product-analysis-v4.txt"
+                : "../prompts/product-analysis-v4.txt"
         );
         let promptContent = await fs.readFile(promptPath, "utf-8");
 
