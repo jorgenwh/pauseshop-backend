@@ -9,8 +9,9 @@ import { Product, TargetGender, Category } from "../types/analyze";
 import { ICON_CATEGORIES, IconCategory } from "../config/icon-categories";
 import { logger } from "../utils/logger";
 
-// Shared prompt cache
+// Shared prompt caches
 let promptCache: string | null = null;
+let rankingPromptCache: string | null = null;
 
 /**
  * Load the prompt from file (shared cache)
@@ -52,6 +53,40 @@ export async function loadPrompt(): Promise<string> {
 }
 
 /**
+ * Load the ranking prompt from file and inject product name
+ */
+export async function loadRankingPrompt(productName: string): Promise<string> {
+    // Load base ranking prompt (cache it)
+    if (!rankingPromptCache) {
+        let serverMode = process.env.SERVER_MODE || "dev";
+        if (serverMode !== "prod" && serverMode !== "dev") {
+            logger.warn(`Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`);
+            serverMode = "prod";
+        }
+
+        try {
+            const promptPath = resolve(
+                __dirname,
+                serverMode === "prod"
+                    ? "/usr/src/app/src/prompts/product-ranking.txt"
+                    : "../prompts/product-ranking.txt"
+            );
+            rankingPromptCache = await fs.readFile(promptPath, "utf-8");
+        } catch (error) {
+            throw new Error("Failed to load product ranking prompt");
+        }
+    }
+
+    // Inject product name into the prompt
+    const promptWithProductName = rankingPromptCache.replace(
+        /\[PRODUCT_NAME\]/g,
+        productName.trim()
+    );
+
+    return promptWithProductName.trim();
+}
+
+/**
  * Extract JSON from response, handling potential extra text
  */
 export function extractJSONFromResponse(response: string): string {
@@ -62,6 +97,26 @@ export function extractJSONFromResponse(response: string): string {
     if (jsonEnd === -1) throw new Error("Incomplete JSON in response");
 
     return response.substring(jsonStart, jsonEnd + 1);
+}
+
+/**
+ * Validate a ranking object structure
+ */
+export function validateRankingObject(obj: unknown): boolean {
+    if (!obj || typeof obj !== 'object') return false;
+    
+    const ranking = obj as Record<string, unknown>;
+    
+    return (
+        typeof ranking.id === 'string' && 
+        ranking.id.trim().length > 0 &&
+        typeof ranking.similarityScore === 'number' && 
+        ranking.similarityScore >= 0 && 
+        ranking.similarityScore <= 100 &&
+        typeof ranking.rank === 'number' && 
+        ranking.rank >= 1 && 
+        ranking.rank <= 10
+    );
 }
 
 /**

@@ -1,0 +1,61 @@
+Analyze the original image and compare it against the provided product thumbnails to find the most visually similar products to the "[PRODUCT_NAME]" visible in the original image.
+
+**TASK OVERVIEW**
+You will receive:
+1. An original image containing a product
+2. Multiple thumbnail images of potential matching products
+3. The product name to focus on: "[PRODUCT_NAME]"
+
+Your goal is to rank the thumbnails by visual similarity to the specific product mentioned in the original image.
+
+**RANKING CRITERIA**
+Score each thumbnail (0-100) based on:
+- **Visual Appearance Match (40 points)**: Overall shape, form, and visual characteristics
+- **Color Similarity (25 points)**: Primary and secondary color matching
+- **Shape/Form Similarity (20 points)**: Structural and dimensional similarity
+- **Style/Design Similarity (15 points)**: Design elements, patterns, textures, and aesthetic style
+
+**STREAMING OUTPUT INSTRUCTIONS**
+- Stream rankings one by one, starting with rank 1 (highest similarity score)
+- Output each ranking immediately as you determine it
+- Stop after outputting the top 10 rankings (or fewer if less than 10 thumbnails provided)
+- Format each ranking as a complete JSON object on its own line
+- Do not include any other text, explanations, or formatting
+
+**JSON FORMAT**
+Each ranking must be output as a single line JSON object in this exact format:
+{"id": "thumbnail_id", "similarityScore": 85, "rank": 1}
+
+**RANKING GUIDELINES**
+
+1. **Focus on the Named Product**: Only compare thumbnails to the "[PRODUCT_NAME]" specifically mentioned, not other items in the original image
+
+2. **Visual Similarity Priority**: Prioritize products that look most similar to the target product in the original image
+
+3. **Scoring Scale**:
+   - 90-100: Nearly identical or extremely similar
+   - 80-89: Very similar with minor differences
+   - 70-79: Similar with some noticeable differences
+   - 60-69: Moderately similar
+   - 50-59: Somewhat similar
+   - Below 50: Low similarity
+
+4. **Ranking Order**: Always rank from highest to lowest similarity score (rank 1 = highest score)
+
+5. **Consistency**: Ensure ranking numbers are sequential (1, 2, 3, etc.) and similarity scores reflect the ranking order
+
+**IMPORTANT CONSTRAINTS**
+- Output ONLY the JSON ranking objects, one per line
+- No additional text, explanations, or commentary
+- Stop immediately after 10 rankings
+- Each JSON object must be complete and valid
+- Thumbnail IDs must exactly match the provided thumbnail identifiers
+
+**EXAMPLE OUTPUT FORMAT**
+{"id": "thumb_001", "similarityScore": 92, "rank": 1}
+{"id": "thumb_015", "similarityScore": 87, "rank": 2}
+{"id": "thumb_008", "similarityScore": 81, "rank": 3}
+{"id": "thumb_023", "similarityScore": 76, "rank": 4}
+{"id": "thumb_012", "similarityScore": 71, "rank": 5}
+
+Begin ranking now. Focus on "[PRODUCT_NAME]" in the original image and compare against all provided thumbnails.
