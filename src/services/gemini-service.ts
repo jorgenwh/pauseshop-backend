@@ -9,6 +9,8 @@ import {
     AnalysisService,
     StreamingCallbacks,
     TokenUsage,
+    RankingRequest,
+    RankingCallbacks,
 } from "../types/analyze";
 import { loadPrompt, handleAPIError } from "./analysis-utils";
 import { DefaultPartialProductParser } from "./partial-product-parser";
@@ -131,5 +133,18 @@ export class GeminiService implements AnalysisService {
             );
             callbacks.onError(handleAPIError(error, "GEMINI"));
         }
+    }
+
+    async rankProductSimilarityStreaming(
+        request: RankingRequest,
+        callbacks: RankingCallbacks,
+    ): Promise<void> {
+        // TODO: Implement ranking functionality in Phase 3
+        callbacks.onError(
+            new Error("Ranking functionality not yet implemented - coming in Phase 3."),
+        );
+        return Promise.reject(
+            new Error("Ranking functionality not yet implemented - coming in Phase 3."),
+        );
     }
 }

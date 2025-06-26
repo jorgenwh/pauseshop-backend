@@ -9,6 +9,8 @@ import {
     StreamingCallbacks,
     OpenRouterResponse,
     OpenRouterStreamChoice,
+    RankingRequest,
+    RankingCallbacks,
 } from "../types/analyze";
 import { handleAPIError, loadPrompt } from "./analysis-utils";
 import { DefaultPartialProductParser } from "./partial-product-parser";
@@ -173,5 +175,18 @@ if (!value) continue;
         } catch (error) {
             callbacks.onError(handleAPIError(error, "OPENROUTER"));
         }
+    }
+
+    async rankProductSimilarityStreaming(
+        request: RankingRequest,
+        callbacks: RankingCallbacks,
+    ): Promise<void> {
+        // OpenRouter ranking is not yet implemented - only Gemini supports ranking
+        callbacks.onError(
+            new Error("Product ranking is only supported with Gemini provider."),
+        );
+        return Promise.reject(
+            new Error("Product ranking is only supported with Gemini provider."),
+        );
     }
 }
