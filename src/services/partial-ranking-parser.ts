@@ -51,7 +51,7 @@ export class DefaultPartialRankingParser implements PartialRankingParser {
      */
     private parseRankingLine(line: string): ProductRanking | null {
         try {
-            const parsed = JSON.parse(line);
+            const parsed = JSON.parse(line) as unknown;
             
             // Validate the parsed object has required fields
             if (!this.isValidRanking(parsed)) {
@@ -59,10 +59,12 @@ export class DefaultPartialRankingParser implements PartialRankingParser {
                 return null;
             }
 
+            // Now we know it's a valid ranking object, safe to access properties
+            const validRanking = parsed as Record<string, unknown>;
             return {
-                id: String(parsed.id).trim(),
-                similarityScore: Number(parsed.similarityScore),
-                rank: Number(parsed.rank)
+                id: String(validRanking.id).trim(),
+                similarityScore: Number(validRanking.similarityScore),
+                rank: Number(validRanking.rank)
             };
         } catch (error) {
             // Not valid JSON, return null

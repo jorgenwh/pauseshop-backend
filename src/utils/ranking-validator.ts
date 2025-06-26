@@ -65,7 +65,7 @@ export const validateRankingRequest = (body: unknown): RankingValidationResult =
 
     // Validate each thumbnail
     for (let i = 0; i < request.thumbnails.length; i++) {
-        const thumbnail = request.thumbnails[i];
+        const thumbnail = request.thumbnails[i] as unknown;
 
         if (!thumbnail || typeof thumbnail !== "object") {
             return {
