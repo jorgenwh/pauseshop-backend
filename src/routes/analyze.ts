@@ -4,8 +4,14 @@
  */
 
 import { Request, Response } from "express";
-import { Product, AnalyzeRequest } from "../types/analyze"; // Added AnalysisProvider
+import {
+    Product,
+    AnalyzeRequest,
+    AnalysisProvider,
+    ProductRanking,
+} from "../types/analyze";
 import { validateImageData } from "../utils/image-validator";
+import { validateRankingRequest, isValidRankingRequest } from "../utils/ranking-validator";
 import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
 import { SessionManager } from "../services/session-manager";
@@ -112,7 +118,6 @@ export const analyzeImageStreamingHandler = async (
     }
 };
 
-
 export const getScreenshotHandler = (req: Request, res: Response) => {
     const { sessionId } = req.params;
     const sessionManager = SessionManager.getInstance();
@@ -122,7 +127,7 @@ export const getScreenshotHandler = (req: Request, res: Response) => {
         // Return the base64 data URL directly in a JSON response
         res.status(200).json({ success: true, screenshot: session.screenshot });
     } else {
-        res.status(404).json({ success: false, error: 'Session not found' });
+        res.status(404).json({ success: false, error: "Session not found" });
     }
 };
 
@@ -133,8 +138,134 @@ export const endSessionHandler = (req: Request, res: Response) => {
 
     // Always return success - if session doesn't exist, it's already ended
     // This handles cases where sessions were auto-cleaned after 30 minutes
-    res.status(200).json({ 
-        success: true, 
-        message: success ? 'Session ended' : 'Session already ended or expired'
+    res.status(200).json({
+        success: true,
+        message: success ? "Session ended" : "Session already ended or expired",
     });
+};
+
+/**
+ * Handles POST /analyze/rank-products requests for SSE ranking
+ */
+export const rankProductsStreamingHandler = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    const startTime = Date.now();
+
+    // Validate provider configuration
+    const validation = AnalysisProviderFactory.validateProviderConfig();
+    if (!validation.isValid) {
+        res.status(500).json({
+            success: false,
+            error: {
+                message: validation.error || "Invalid provider configuration",
+                code: "PROVIDER_CONFIG_ERROR",
+                timestamp: new Date().toISOString(),
+            },
+        });
+        return;
+    }
+
+    // Validate that Gemini is the active provider (ranking only supported on Gemini)
+    const currentProvider = AnalysisProviderFactory.getCurrentProvider();
+    if (currentProvider !== AnalysisProvider.GEMINI) {
+        res.status(400).json({
+            success: false,
+            error: {
+                message: `Product ranking is only supported with Gemini provider. Current provider: ${currentProvider}`,
+                code: "UNSUPPORTED_PROVIDER",
+                timestamp: new Date().toISOString(),
+            },
+        });
+        return;
+    }
+
+    // Set SSE headers
+    res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*", // Allow all origins for development, restrict in production
+    });
+
+    // Send a "start" event immediately
+    res.write(
+        `event: start\ndata: ${JSON.stringify({
+            timestamp: new Date().toISOString(),
+            provider: currentProvider,
+            feature: "ranking",
+        })}\n\n`,
+    );
+
+    const streamingService = new StreamingAnalysisService();
+
+    try {
+        // Validate request body structure
+        const validationResult = validateRankingRequest(req.body);
+        if (!validationResult.isValid) {
+            res.write(
+                `event: error\ndata: ${JSON.stringify({
+                    message:
+                        validationResult.error || "Invalid request structure",
+                    code: "INVALID_REQUEST",
+                })}\n\n`,
+            );
+            res.end();
+            return;
+        }
+
+        // Type-safe request body (validated above)
+        const rankingRequest = req.body as Parameters<
+            typeof isValidRankingRequest
+        >[0];
+        if (!isValidRankingRequest(rankingRequest)) {
+            res.write(
+                `event: error\ndata: ${JSON.stringify({
+                    message: "Request validation failed",
+                    code: "VALIDATION_ERROR",
+                })}\n\n`,
+            );
+            res.end();
+            return;
+        }
+
+        await streamingService.rankProductSimilarityStreaming(rankingRequest, {
+            onRanking: (ranking: ProductRanking) => {
+                res.write(
+                    `event: ranking\ndata: ${JSON.stringify(ranking)}\n\n`,
+                );
+            },
+            onComplete: (response) => {
+                const processingTime = Date.now() - startTime;
+                res.write(
+                    `event: complete\ndata: ${JSON.stringify({
+                        totalRankings: response.totalRankings,
+                        processingTime,
+                        usage: response.usage,
+                    })}\n\n`,
+                );
+                res.end();
+            },
+            onError: (error: Error) => {
+                res.write(
+                    `event: error\ndata: ${JSON.stringify({
+                        message: error.message,
+                        code: "RANKING_ERROR",
+                    })}\n\n`,
+                );
+                res.end();
+            },
+        });
+    } catch (error) {
+        res.write(
+            `event: error\ndata: ${JSON.stringify({
+                message:
+                    (error as Error).message ||
+                    "Internal server error during ranking analysis",
+                code: "INTERNAL_RANKING_ERROR",
+            })}\n\n`,
+        );
+        res.end();
+    }
 };
