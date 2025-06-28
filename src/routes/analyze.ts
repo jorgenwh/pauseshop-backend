@@ -4,7 +4,7 @@
  */
 
 import { Request, Response } from "express";
-import { Product, AnalysisProvider, AnalyzeRequest } from "../types/analyze"; // Added AnalysisProvider
+import { Product, AnalyzeRequest } from "../types/analyze"; // Added AnalysisProvider
 import { validateImageData } from "../utils/image-validator";
 import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
@@ -19,19 +19,9 @@ export const analyzeImageStreamingHandler = async (
 ): Promise<void> => {
     const startTime = Date.now();
 
-    // Log provider configuration at the start of each request
-    // console.log("[ANALYZE_STREAM] =================================");
-    // console.log("[ANALYZE_STREAM] Starting streaming image analysis request");
-    // console.log(
-    //     `[ANALYZE_STREAM] Provider: ${AnalysisProviderFactory.getCurrentProvider()}`,
-    // );
-
     // Validate provider configuration
     const validation = AnalysisProviderFactory.validateProviderConfig();
     if (!validation.isValid) {
-        // console.error(
-        //     `[ANALYZE_STREAM] Provider configuration error: ${validation.error}`,
-        // );
         res.status(500).json({
             success: false,
             error: {
@@ -42,20 +32,6 @@ export const analyzeImageStreamingHandler = async (
         });
         return;
     }
-
-    // Log provider-specific configuration
-    const currentProvider = AnalysisProviderFactory.getCurrentProvider();
-    
-    if (currentProvider === AnalysisProvider.OPENAI) {
-        // console.log(
-        //     `[ANALYZE_STREAM] OpenAI Model: ${process.env.OPENAI_MODEL || "gpt-4o-mini"}`,
-        // );
-    } else if (currentProvider === AnalysisProvider.REQUESTY) {
-        // console.log(
-        //     `[ANALYZE_STREAM] Requesty Model: ${process.env.REQUESTY_MODEL || "openai/gpt-4o-mini"}`,
-        // );
-    }
-    // console.log("[ANALYZE_STREAM] =================================");
 
     // Set SSE headers
     res.writeHead(200, {
@@ -114,10 +90,10 @@ export const analyzeImageStreamingHandler = async (
                 res.end();
             },
             onError: (error: Error) => {
-                // console.error(
-                //     "[ANALYZE_STREAM] Error during streaming analysis:",
-                //     error,
-                // );
+                console.error(
+                    "[ANALYZE_STREAM] Error during streaming analysis:",
+                    error,
+                );
                 res.write(
                     `event: error\ndata: ${JSON.stringify({ message: error.message, code: "STREAMING_ERROR" })}\n\n`,
                 );
@@ -125,10 +101,10 @@ export const analyzeImageStreamingHandler = async (
             },
         });
     } catch (error) {
-        // console.error(
-        //     "[ANALYZE_STREAM] Uncaught error in streaming handler:",
-        //     error,
-        // );
+        console.error(
+            "[ANALYZE_STREAM] Uncaught error in streaming handler:",
+            error,
+        );
         res.write(
             `event: error\ndata: ${JSON.stringify({ message: (error as Error).message || "Internal server error during streaming analysis", code: "INTERNAL_STREAMING_ERROR" })}\n\n`,
         );

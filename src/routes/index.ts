@@ -11,9 +11,9 @@ const router = Router();
 // Health check endpoint
 router.get("/health", healthCheckHandler);
 
-// Streaming image analysis endpoint (only endpoint available)
+// Streaming image analysis endpoint
 router.post("/analyze/stream", (req, res, next) => {
-  void analyzeImageStreamingHandler(req, res).catch(next);
+    void analyzeImageStreamingHandler(req, res).catch(next);
 });
 
 // Session management endpoints
