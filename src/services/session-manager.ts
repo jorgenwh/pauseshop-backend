@@ -1,7 +1,8 @@
 import { Session } from '../types/analyze';
 import { logger } from '../utils/logger';
 
-const SESSION_TTL = 10 * 60 * 1000; // 30 minutes
+const SESSION_TTL = 10 * 60 * 1000; // 10 minutes
+const MAX_SESSIONS = parseInt(process.env.MAX_SESSIONS || '100', 10); // Maximum number of concurrent sessions
 
 export class SessionManager {
     private static instance: SessionManager;
@@ -20,13 +21,22 @@ export class SessionManager {
     }
 
     public createSession(sessionId: string, screenshot: string): Session {
+        // If we're at the session limit, remove the oldest session
+        if (this.sessions.size >= MAX_SESSIONS) {
+            const oldestSessionId = this.sessions.keys().next().value;
+            if (oldestSessionId) {
+                this.sessions.delete(oldestSessionId);
+                logger.info(`Session limit reached. Evicted oldest session: ${oldestSessionId}`);
+            }
+        }
+
         const session: Session = {
             sessionId,
             screenshot,
             timestamp: Date.now(),
         };
         this.sessions.set(sessionId, session);
-        logger.info(`Session created: ${sessionId}`);
+        logger.info(`Session created: ${sessionId} (Active sessions: ${this.sessions.size})`);
         return session;
     }
 
