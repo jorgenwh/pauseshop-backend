@@ -64,8 +64,6 @@ export class SessionManager {
                 cleanedCount++;
             }
         }
-        if (cleanedCount > 0) {
-            logger.info(`Session cleanup complete. Cleaned: ${cleanedCount}, Remaining: ${this.sessions.size}`);
-        }
+        logger.info(`Session cleanup complete. Cleaned: ${cleanedCount}, Active: ${this.sessions.size}`);
     }
 }
