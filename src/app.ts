@@ -54,7 +54,7 @@ const createApp = (): express.Application => {
                 "chrome-extension://*",
                 /^chrome-extension:\/\/.*$/,
                 "http://localhost:3000", // For local development testing
-                // "http://localhost:5173", // For local website testing
+                "http://localhost:5173", // For local website testing
                 "http://127.0.0.1:3000",
                 "https://pauseshop.net",
             ],
