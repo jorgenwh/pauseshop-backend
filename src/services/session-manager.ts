@@ -1,7 +1,7 @@
 import { Session } from '../types/analyze';
 import { logger } from '../utils/logger';
 
-const SESSION_TTL = 30 * 60 * 1000; // 30 minutes
+const SESSION_TTL = 10 * 60 * 1000; // 30 minutes
 
 export class SessionManager {
     private static instance: SessionManager;
@@ -33,11 +33,6 @@ export class SessionManager {
     public getSession(sessionId: string): Session | undefined {
         const session = this.sessions.get(sessionId);
         if (session) {
-            if (Date.now() - session.timestamp > SESSION_TTL) {
-                this.sessions.delete(sessionId);
-                logger.info(`Session expired and cleaned: ${sessionId}`);
-                return undefined;
-            }
             logger.info(`Session retrieved: ${sessionId}`);
             return session;
         }
@@ -54,8 +49,6 @@ export class SessionManager {
         }
         return deleted;
     }
-
-
 
     private cleanupExpiredSessions(): void {
         const now = Date.now();
