@@ -155,9 +155,10 @@ export const endSessionHandler = (req: Request, res: Response) => {
     const sessionManager = SessionManager.getInstance();
     const success = sessionManager.endSession(sessionId);
 
-    if (success) {
-        res.status(200).json({ success: true, message: 'Session ended' });
-    } else {
-        res.status(404).json({ success: false, error: 'Session not found' });
-    }
+    // Always return success - if session doesn't exist, it's already ended
+    // This handles cases where sessions were auto-cleaned after 30 minutes
+    res.status(200).json({ 
+        success: true, 
+        message: success ? 'Session ended' : 'Session already ended or expired'
+    });
 };

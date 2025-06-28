@@ -49,6 +49,8 @@ export class SessionManager {
         const deleted = this.sessions.delete(sessionId);
         if (deleted) {
             logger.info(`Session ended by client: ${sessionId}`);
+        } else {
+            logger.info(`Session end requested for non-existent session (likely already expired): ${sessionId}`);
         }
         return deleted;
     }
