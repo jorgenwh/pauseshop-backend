@@ -4,7 +4,7 @@
 
 import { Router } from "express";
 import { healthCheckHandler } from "./health";
-import { analyzeImageStreamingHandler } from "./analyze";
+import { analyzeImageStreamingHandler, getScreenshotHandler, endSessionHandler } from "./analyze";
 
 const router = Router();
 
@@ -15,5 +15,9 @@ router.get("/health", healthCheckHandler);
 router.post("/analyze/stream", (req, res, next) => {
   void analyzeImageStreamingHandler(req, res).catch(next);
 });
+
+// Session management endpoints
+router.get("/session/:sessionId/screenshot", getScreenshotHandler);
+router.post("/session/:sessionId/end", endSessionHandler);
 
 export default router;

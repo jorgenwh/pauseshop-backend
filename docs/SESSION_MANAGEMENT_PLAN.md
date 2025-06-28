@@ -4,9 +4,17 @@ This document outlines the plan to implement session management for the PauseSho
 
 ## 1. Session Data Structure
 
-A new `Session` type will be defined in `src/types/analyze.ts` to standardize the session data structure.
+The `AnalyzeRequest` interface in `src/types/analyze.ts` will be updated to include an optional `sessionId`. A new `Session` type will also be defined.
 
 ```typescript
+export interface AnalyzeRequest {
+    image: string; // base64 data URL
+    sessionId?: string; // Optional client-generated ID
+    metadata?: {
+        timestamp: string;
+    };
+}
+
 export interface Session {
     sessionId: string;
     screenshot: string; // base64 data URL
@@ -21,7 +29,7 @@ A new service, `SessionManager`, will be created in `src/services/session-manage
 ```typescript
 // src/services/session-manager.ts
 import { Session } from '../types';
-import { randomBytes } from 'crypto';
+import { logger } from '../utils/logger';
 
 const SESSION_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -48,28 +56,46 @@ export class SessionManager {
             timestamp: Date.now(),
         };
         this.sessions.set(sessionId, session);
+        logger.info(`Session created: ${sessionId}`);
         return session;
     }
 
     public getSession(sessionId: string): Session | undefined {
         const session = this.sessions.get(sessionId);
-        if (session && Date.now() - session.timestamp > SESSION_TTL) {
-            this.sessions.delete(sessionId);
-            return undefined;
+        if (session) {
+            if (Date.now() - session.timestamp > SESSION_TTL) {
+                this.sessions.delete(sessionId);
+                logger.info(`Session expired and cleaned: ${sessionId}`);
+                return undefined;
+            }
+            logger.info(`Session retrieved: ${sessionId}`);
+            return session;
         }
-        return session;
+        logger.warn(`Session not found: ${sessionId}`);
+        return undefined;
     }
 
     public endSession(sessionId: string): boolean {
-        return this.sessions.delete(sessionId);
+        const deleted = this.sessions.delete(sessionId);
+        if (deleted) {
+            logger.info(`Session ended by client: ${sessionId}`);
+        }
+        return deleted;
     }
+
+
 
     private cleanupExpiredSessions(): void {
         const now = Date.now();
+        let cleanedCount = 0;
         for (const [sessionId, session] of this.sessions.entries()) {
             if (now - session.timestamp > SESSION_TTL) {
                 this.sessions.delete(sessionId);
+                cleanedCount++;
             }
+        }
+        if (cleanedCount > 0) {
+            logger.info(`Session cleanup complete. Cleaned: ${cleanedCount}, Remaining: ${this.sessions.size}`);
         }
     }
 }
@@ -79,29 +105,30 @@ export class SessionManager {
 
 ### 3.1. Update `/analyze/stream` Endpoint
 
-The existing `/analyze/stream` endpoint will be modified to accept a `sessionId` in the URL, for example: `POST /analyze/stream/:sessionId`.
+The existing `/analyze/stream` endpoint will be modified to handle an optional `sessionId` from the request body.
 
--   **On request**: The `sessionId` will be extracted from the URL parameters. A new session will be created using this ID and the `SessionManager`.
--   **Idempotency**: This approach makes the endpoint idempotent. If the client sends the same request multiple times, it will simply update the existing session.
+-   **On request**: If a `sessionId` is provided in the request body, a new session will be created using this ID and the `SessionManager`.
+-   **Backward Compatibility**: If no `sessionId` is provided, the endpoint will function as it currently does, without creating a session.
+-   **SSE `start` event**: The `start` event will include the `sessionId` only if a session was created.
 
 ```typescript
 // src/routes/analyze.ts (modifications)
 import { SessionManager } from '../services/session-manager';
 
 // ... inside analyzeImageStreamingHandler
-const { sessionId } = req.params;
-const image = req.body.image as string;
+const { image, sessionId } = req.body as AnalyzeRequest;
+const startData: { [key: string]: any } = {
+    timestamp: new Date().toISOString(),
+    provider: AnalysisProviderFactory.getCurrentProvider(),
+};
 
-const sessionManager = SessionManager.getInstance();
-const session = sessionManager.createSession(sessionId, image);
+if (sessionId) {
+    const sessionManager = SessionManager.getInstance();
+    const session = sessionManager.createSession(sessionId, image);
+    startData.sessionId = session.sessionId;
+}
 
-res.write(
-    `event: start\ndata: ${JSON.stringify({
-        timestamp: new Date().toISOString(),
-        provider: AnalysisProviderFactory.getCurrentProvider(),
-        sessionId: session.sessionId
-    })}\n\n`,
-);
+res.write(`event: start\ndata: ${JSON.stringify(startData)}\n\n`);
 ```
 
 ### 3.2. New Endpoint: `GET /session/:sessionId/screenshot`
@@ -173,10 +200,23 @@ import {
 
 // ...
 
-app.post('/analyze/stream/:sessionId', analyzeImageStreamingHandler);
+app.post('/analyze/stream', analyzeImageStreamingHandler);
 app.get('/session/:sessionId/screenshot', getScreenshotHandler);
 app.post('/session/:sessionId/end', endSessionHandler);
 ```
+
+## 5. Logging Strategy
+
+To ensure visibility into the session lifecycle, the following events will be logged:
+
+-   **Session Creation**: Logged when a new session is successfully created.
+-   **Session Retrieval**: Logged on successful retrieval of a session.
+-   **Session Not Found**: A warning is logged if a requested session ID does not exist.
+-   **Session Expiration**: Logged when a session is accessed but has expired.
+-   **Session End**: Logged when a session is terminated by the client.
+-   **Session Cleanup**: A summary is logged periodically, detailing the number of expired sessions cleaned and the number remaining.
+
+## 6. Future Scalability
 
 ## 5. Future Scalability
 

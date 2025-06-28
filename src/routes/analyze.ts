@@ -4,10 +4,11 @@
  */
 
 import { Request, Response } from "express";
-import { Product, AnalysisProvider } from "../types/analyze"; // Added AnalysisProvider
+import { Product, AnalysisProvider, AnalyzeRequest } from "../types/analyze"; // Added AnalysisProvider
 import { validateImageData } from "../utils/image-validator";
 import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
+import { SessionManager } from "../services/session-manager";
 
 /**
  * Handles POST /analyze/stream requests for SSE
@@ -65,17 +66,23 @@ export const analyzeImageStreamingHandler = async (
     });
 
     // Send a "start" event immediately
-    res.write(
-        `event: start\ndata: ${JSON.stringify({ timestamp: new Date().toISOString(), provider: AnalysisProviderFactory.getCurrentProvider() })}\n\n`,
-    );
+    const { image, sessionId } = req.body as AnalyzeRequest;
+    const startData: { [key: string]: any } = {
+        timestamp: new Date().toISOString(),
+        provider: AnalysisProviderFactory.getCurrentProvider(),
+    };
+
+    if (sessionId) {
+        const sessionManager = SessionManager.getInstance();
+        const session = sessionManager.createSession(sessionId, image);
+        startData.sessionId = session.sessionId;
+    }
+
+    res.write(`event: start\ndata: ${JSON.stringify(startData)}\n\n`);
 
     const streamingService = new StreamingAnalysisService();
 
     try {
-        // Safely parse the request body
-        const body = req.body as Record<string, unknown>;
-        const image = body.image as string;
-
         if (!image) {
             res.write(
                 `event: error\ndata: ${JSON.stringify({ message: "Missing required field: image", code: "MISSING_IMAGE" })}\n\n`,
@@ -126,5 +133,31 @@ export const analyzeImageStreamingHandler = async (
             `event: error\ndata: ${JSON.stringify({ message: (error as Error).message || "Internal server error during streaming analysis", code: "INTERNAL_STREAMING_ERROR" })}\n\n`,
         );
         res.end();
+    }
+};
+
+
+export const getScreenshotHandler = (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const sessionManager = SessionManager.getInstance();
+    const session = sessionManager.getSession(sessionId);
+
+    if (session) {
+        // Return the base64 data URL directly in a JSON response
+        res.status(200).json({ success: true, screenshot: session.screenshot });
+    } else {
+        res.status(404).json({ success: false, error: 'Session not found' });
+    }
+};
+
+export const endSessionHandler = (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const sessionManager = SessionManager.getInstance();
+    const success = sessionManager.endSession(sessionId);
+
+    if (success) {
+        res.status(200).json({ success: true, message: 'Session ended' });
+    } else {
+        res.status(404).json({ success: false, error: 'Session not found' });
     }
 };
