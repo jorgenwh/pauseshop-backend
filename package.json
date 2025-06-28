@@ -4,7 +4,7 @@
     "description": "PauseShop Backend Server",
     "private": true,
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && cp -r src/prompts dist/",
         "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
         "start": "node dist/index.js",
         "clean": "rimraf dist",

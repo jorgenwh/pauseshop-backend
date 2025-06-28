@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import createApp from "./app";
+import { SessionManager } from "./services/session-manager";
 import { logger } from "./utils/logger";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -48,6 +49,10 @@ const startServer = (): void => {
     try {
         // Validate environment variables first
         validateEnvironment();
+
+        // Initialize services
+        SessionManager.getInstance();
+        logger.info("✅ Session manager initialized");
 
         const app = createApp();
 

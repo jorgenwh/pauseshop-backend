@@ -4,16 +4,20 @@
 
 import { Router } from "express";
 import { healthCheckHandler } from "./health";
-import { analyzeImageStreamingHandler } from "./analyze";
+import { analyzeImageStreamingHandler, getScreenshotHandler, endSessionHandler } from "./analyze";
 
 const router = Router();
 
 // Health check endpoint
 router.get("/health", healthCheckHandler);
 
-// Streaming image analysis endpoint (only endpoint available)
+// Streaming image analysis endpoint
 router.post("/analyze/stream", (req, res, next) => {
-  void analyzeImageStreamingHandler(req, res).catch(next);
+    void analyzeImageStreamingHandler(req, res).catch(next);
 });
+
+// Session management endpoints
+router.get("/session/:sessionId/screenshot", getScreenshotHandler);
+router.post("/session/:sessionId/end", endSessionHandler);
 
 export default router;

@@ -4,10 +4,11 @@
  */
 
 import { Request, Response } from "express";
-import { Product, AnalysisProvider } from "../types/analyze"; // Added AnalysisProvider
+import { Product, AnalyzeRequest } from "../types/analyze"; // Added AnalysisProvider
 import { validateImageData } from "../utils/image-validator";
 import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
+import { SessionManager } from "../services/session-manager";
 
 /**
  * Handles POST /analyze/stream requests for SSE
@@ -18,19 +19,9 @@ export const analyzeImageStreamingHandler = async (
 ): Promise<void> => {
     const startTime = Date.now();
 
-    // Log provider configuration at the start of each request
-    // console.log("[ANALYZE_STREAM] =================================");
-    // console.log("[ANALYZE_STREAM] Starting streaming image analysis request");
-    // console.log(
-    //     `[ANALYZE_STREAM] Provider: ${AnalysisProviderFactory.getCurrentProvider()}`,
-    // );
-
     // Validate provider configuration
     const validation = AnalysisProviderFactory.validateProviderConfig();
     if (!validation.isValid) {
-        // console.error(
-        //     `[ANALYZE_STREAM] Provider configuration error: ${validation.error}`,
-        // );
         res.status(500).json({
             success: false,
             error: {
@@ -42,20 +33,6 @@ export const analyzeImageStreamingHandler = async (
         return;
     }
 
-    // Log provider-specific configuration
-    const currentProvider = AnalysisProviderFactory.getCurrentProvider();
-    
-    if (currentProvider === AnalysisProvider.OPENAI) {
-        // console.log(
-        //     `[ANALYZE_STREAM] OpenAI Model: ${process.env.OPENAI_MODEL || "gpt-4o-mini"}`,
-        // );
-    } else if (currentProvider === AnalysisProvider.REQUESTY) {
-        // console.log(
-        //     `[ANALYZE_STREAM] Requesty Model: ${process.env.REQUESTY_MODEL || "openai/gpt-4o-mini"}`,
-        // );
-    }
-    // console.log("[ANALYZE_STREAM] =================================");
-
     // Set SSE headers
     res.writeHead(200, {
         "Content-Type": "text/event-stream",
@@ -65,17 +42,23 @@ export const analyzeImageStreamingHandler = async (
     });
 
     // Send a "start" event immediately
-    res.write(
-        `event: start\ndata: ${JSON.stringify({ timestamp: new Date().toISOString(), provider: AnalysisProviderFactory.getCurrentProvider() })}\n\n`,
-    );
+    const { image, sessionId } = req.body as AnalyzeRequest;
+    const startData: { [key: string]: any } = {
+        timestamp: new Date().toISOString(),
+        provider: AnalysisProviderFactory.getCurrentProvider(),
+    };
+
+    if (sessionId) {
+        const sessionManager = SessionManager.getInstance();
+        const session = sessionManager.createSession(sessionId, image);
+        startData.sessionId = session.sessionId;
+    }
+
+    res.write(`event: start\ndata: ${JSON.stringify(startData)}\n\n`);
 
     const streamingService = new StreamingAnalysisService();
 
     try {
-        // Safely parse the request body
-        const body = req.body as Record<string, unknown>;
-        const image = body.image as string;
-
         if (!image) {
             res.write(
                 `event: error\ndata: ${JSON.stringify({ message: "Missing required field: image", code: "MISSING_IMAGE" })}\n\n`,
@@ -107,10 +90,10 @@ export const analyzeImageStreamingHandler = async (
                 res.end();
             },
             onError: (error: Error) => {
-                // console.error(
-                //     "[ANALYZE_STREAM] Error during streaming analysis:",
-                //     error,
-                // );
+                console.error(
+                    "[ANALYZE_STREAM] Error during streaming analysis:",
+                    error,
+                );
                 res.write(
                     `event: error\ndata: ${JSON.stringify({ message: error.message, code: "STREAMING_ERROR" })}\n\n`,
                 );
@@ -118,13 +101,40 @@ export const analyzeImageStreamingHandler = async (
             },
         });
     } catch (error) {
-        // console.error(
-        //     "[ANALYZE_STREAM] Uncaught error in streaming handler:",
-        //     error,
-        // );
+        console.error(
+            "[ANALYZE_STREAM] Uncaught error in streaming handler:",
+            error,
+        );
         res.write(
             `event: error\ndata: ${JSON.stringify({ message: (error as Error).message || "Internal server error during streaming analysis", code: "INTERNAL_STREAMING_ERROR" })}\n\n`,
         );
         res.end();
     }
+};
+
+
+export const getScreenshotHandler = (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const sessionManager = SessionManager.getInstance();
+    const session = sessionManager.getSession(sessionId);
+
+    if (session) {
+        // Return the base64 data URL directly in a JSON response
+        res.status(200).json({ success: true, screenshot: session.screenshot });
+    } else {
+        res.status(404).json({ success: false, error: 'Session not found' });
+    }
+};
+
+export const endSessionHandler = (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const sessionManager = SessionManager.getInstance();
+    const success = sessionManager.endSession(sessionId);
+
+    // Always return success - if session doesn't exist, it's already ended
+    // This handles cases where sessions were auto-cleaned after 30 minutes
+    res.status(200).json({ 
+        success: true, 
+        message: success ? 'Session ended' : 'Session already ended or expired'
+    });
 };

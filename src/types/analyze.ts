@@ -4,9 +4,16 @@
 
 export interface AnalyzeRequest {
     image: string; // base64 data URL
+    sessionId?: string; // Optional client-generated ID
     metadata?: {
         timestamp: string;
     };
+}
+
+export interface Session {
+    sessionId: string;
+    screenshot: string; // base64 data URL
+    timestamp: number;
 }
 
 import { IconCategory } from "../config/icon-categories";
