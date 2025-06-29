@@ -9,9 +9,12 @@ import {
     AnalysisService,
     StreamingCallbacks,
     TokenUsage,
+    RankingRequest,
+    RankingCallbacks,
 } from "../types/analyze";
-import { loadPrompt, handleAPIError } from "./analysis-utils";
+import { loadPrompt, loadRankingPrompt, handleAPIError } from "./analysis-utils";
 import { DefaultPartialProductParser } from "./partial-product-parser";
+import { DefaultPartialRankingParser } from "./partial-ranking-parser";
 import { logger } from "../utils/logger";
 
 export class GeminiService implements AnalysisService {
@@ -55,21 +58,9 @@ export class GeminiService implements AnalysisService {
                     },
                 ],
                 generationConfig: {
-                    maxOutputTokens: this.config.maxTokens,
                 },
             };
 
-            if (this.config.thinkingBudget !== undefined) {
-                request.generationConfig = {
-                    ...request.generationConfig,
-                    // The 'thinkingConfig' property is not directly part of GenerationConfig in the public API.
-                    // If it's a custom or internal property, it might need to be handled differently.
-                    // For now, removing it to resolve the type error.
-                    // thinkingConfig: {
-                    //     thinkingBudget: this.config.thinkingBudget,
-                    // },
-                };
-            }
 
             const model = this.client.getGenerativeModel({ model: this.config.model });
             const streamResult = await model.generateContentStream(request);
@@ -127,6 +118,141 @@ export class GeminiService implements AnalysisService {
         } catch (error) {
             logger.error(
                 "[GEMINI_SERVICE] Error during streaming image analysis:",
+                error,
+            );
+            callbacks.onError(handleAPIError(error, "GEMINI"));
+        }
+    }
+
+    async rankProductSimilarityStreaming(
+        request: RankingRequest,
+        callbacks: RankingCallbacks,
+    ): Promise<void> {
+        const startTime = Date.now();
+        try {
+            // Load ranking prompt with product name injection
+            const prompt = await loadRankingPrompt(
+                request.productName,
+                request.category,
+            );
+            const parser = new DefaultPartialRankingParser();
+
+            let firstTokenTime: number | null = null;
+            let lastTokenTime: number | null = null;
+            let rankingCount = 0;
+
+            // Prepare multi-image request: original image + all thumbnails
+            if (!request.originalImage) {
+                throw new Error("Original image is required for ranking.");
+            }
+
+            const imageParts = [
+                // Original image first
+                {
+                    inlineData: {
+                        mimeType: "image/jpeg",
+                        data: request.originalImage.split(",")[1], // Remove base64 prefix
+                    },
+                }
+            ];
+
+            // Add all thumbnail images
+            request.thumbnails.forEach(thumbnail => {
+                imageParts.push({
+                    inlineData: {
+                        mimeType: "image/jpeg",
+                        data: thumbnail.image.split(",")[1], // Remove base64 prefix
+                    },
+                });
+            });
+
+            const geminiRequest: GenerateContentRequest = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: prompt },
+                            ...imageParts
+                        ],
+                    },
+                ],
+                generationConfig: {
+                },
+            };
+
+
+            const model = this.client.getGenerativeModel({ model: this.config.deepSearchModel });
+            const streamResult = await model.generateContentStream(geminiRequest);
+
+            let lastChunk: GenerateContentResponse | null = null;
+
+            for await (const chunk of streamResult.stream) {
+                lastChunk = chunk;
+                const chunkText = chunk.text();
+                if (chunkText) {
+                    if (firstTokenTime === null) {
+                        firstTokenTime = Date.now();
+                    }
+                    lastTokenTime = Date.now();
+
+                    // Parse rankings from the current chunk
+                    const rankings = parser.parse(chunkText);
+                    
+                    // Stream each ranking and check if we should stop
+                    rankings.forEach((ranking) => {
+                        if (rankingCount < 10) { // Stop at 10 rankings
+                            callbacks.onRanking(ranking);
+                            rankingCount++;
+                        }
+                    });
+
+                    // Stop streaming if we've reached 10 rankings
+                    if (rankingCount >= 10) {
+                        break;
+                    }
+                }
+            }
+
+            // After the stream ends, flush the parser buffer to get any remaining rankings
+            const remainingRankings = parser.flush();
+            remainingRankings.forEach((ranking) => {
+                if (rankingCount < 10) {
+                    callbacks.onRanking(ranking);
+                    rankingCount++;
+                }
+            });
+
+            const processingTime = Date.now() - startTime;
+            const streamingDuration = lastTokenTime && firstTokenTime ? lastTokenTime - firstTokenTime : 0;
+
+            const usageMetadata = lastChunk?.usageMetadata;
+            const promptTokenCount = usageMetadata?.promptTokenCount || 0;
+            const candidatesTokenCount = usageMetadata?.candidatesTokenCount || 0;
+            const totalTokenCount = usageMetadata?.totalTokenCount || 0;
+
+            const promptCost = promptTokenCount * this.config.promptCostPerToken;
+            const completionCost = candidatesTokenCount * this.config.completionCostPerToken;
+            const totalCost = promptCost + completionCost;
+
+            logger.log(
+                `[GEMINI_SERVICE] Ranking Analysis completed in ${processingTime}ms (streaming duration: ${streamingDuration}ms). Rankings: ${rankingCount}/10. Tokens: [${promptTokenCount}/${candidatesTokenCount}/${totalTokenCount}]. Cost: $${totalCost.toFixed(6)}`,
+            );
+
+            callbacks.onComplete({
+                totalRankings: rankingCount,
+                processingTime,
+                usage: usageMetadata
+                    ? {
+                        promptTokens: promptTokenCount,
+                        completionTokens: candidatesTokenCount,
+                        totalTokens: totalTokenCount,
+                    } as TokenUsage
+                    : undefined,
+            });
+
+        } catch (error) {
+            logger.error(
+                "[GEMINI_SERVICE] Error during ranking analysis:",
                 error,
             );
             callbacks.onError(handleAPIError(error, "GEMINI"));

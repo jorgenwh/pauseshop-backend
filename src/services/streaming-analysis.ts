@@ -6,6 +6,10 @@ import {
     OpenAIResponse,
     RequestyResponse,
     OpenRouterResponse,
+    RankingRequest,
+    RankingCallbacks,
+    ProductRanking,
+    RankingCompleteResponse,
 } from "../types/analyze";
 import { AnalysisProviderFactory } from "./analysis-provider-factory";
 import { logger } from "../utils/logger";
@@ -14,6 +18,7 @@ interface StreamingAnalysisCallbacks extends StreamingCallbacks {
     onStart?: () => void;
     onProgress?: (progress: { processed: number; estimated: number }) => void;
 }
+
 
 export class StreamingAnalysisService {
     private provider: AnalysisService;
@@ -63,6 +68,58 @@ export class StreamingAnalysisService {
                     callbacks.onComplete(response);
                 },
                 onError: (error: Error) => {
+                    callbacks.onError(error);
+                },
+            });
+        } catch (error) {
+            callbacks.onError(error as Error);
+        }
+    }
+
+    public async rankProductSimilarityStreaming(
+        request: RankingRequest,
+        callbacks: RankingCallbacks,
+    ): Promise<void> {
+        const rankings: ProductRanking[] = [];
+
+        logger.log("[RANKING_STREAM] =================================");
+        logger.log("[RANKING_STREAM] Starting streaming ranking analysis request");
+        logger.log(`[RANKING_STREAM] Provider: ${this.providerName}`);
+        logger.log(`[RANKING_STREAM] Product: ${request.productName}`);
+        logger.log(`[RANKING_STREAM] Thumbnails: ${request.thumbnails.length}`);
+        logger.log("[RANKING_STREAM] =================================");
+
+        // Validate provider supports ranking (only Gemini for now)
+        if (this.providerName.toUpperCase() !== "GEMINI") {
+            const error = new Error(`Product ranking is only supported with Gemini provider. Current provider: ${this.providerName}`);
+            callbacks.onError(error);
+            return;
+        }
+
+        try {
+            await this.provider.rankProductSimilarityStreaming(request, {
+                onRanking: (ranking: ProductRanking) => {
+                    logger.log(
+                        `[${new Date()
+                            .toTimeString()
+                            .slice(
+                                0,
+                                8
+                            )}] Rank ${ranking.rank}: ${ranking.id} (similarity: ${ranking.similarityScore}%)`
+                    );
+                    rankings.push(ranking);
+                    callbacks.onRanking(ranking);
+                },
+                onComplete: (response: RankingCompleteResponse) => {
+                    logger.log("[RANKING_STREAM] =================================");
+                    logger.log(`[RANKING_STREAM] Ranking analysis completed`);
+                    logger.log(`[RANKING_STREAM] Total rankings: ${response.totalRankings}`);
+                    logger.log(`[RANKING_STREAM] Processing time: ${response.processingTime}ms`);
+                    logger.log("[RANKING_STREAM] =================================");
+                    callbacks.onComplete(response);
+                },
+                onError: (error: Error) => {
+                    logger.error("[RANKING_STREAM] Error during ranking analysis:", error);
                     callbacks.onError(error);
                 },
             });

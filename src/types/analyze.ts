@@ -106,8 +106,7 @@ export interface OpenRouterStreamChoice {
 export interface GeminiConfig {
     apiKey: string;
     model: string;
-    maxTokens: number;
-    thinkingBudget?: number;
+    deepSearchModel: string;
     promptCostPerToken: number;
     completionCostPerToken: number;
 }
@@ -191,10 +190,50 @@ export interface PartialProductParser {
     parse(partialResponse: string): Product[];
 }
 
+// ============================================================================
+// RANKING TYPES - New interfaces for product ranking functionality
+// ============================================================================
+
+export interface RankingRequest {
+    originalImage?: string;          // base64 original video frame (optional)
+    pauseId?: string;                // ID for session-based image retrieval (optional)
+    productName: string;             // from product metadata
+    category: Category;              // from product metadata
+    thumbnails: ThumbnailData[];     // array of thumbnail images with IDs
+}
+
+export interface ThumbnailData {
+    id: string;                      // unique identifier
+    image: string;                   // base64 thumbnail image
+}
+
+export interface ProductRanking {
+    id: string;                      // matches thumbnail ID
+    similarityScore: number;         // 0-100 confidence score
+    rank: number;                    // 1-10 position
+}
+
+export interface RankingCallbacks {
+    onRanking: (ranking: ProductRanking) => void;    // Stream each rank as it's determined
+    onComplete: (response: RankingCompleteResponse) => void;
+    onError: (error: Error) => void;
+}
+
+export interface RankingCompleteResponse {
+    totalRankings: number;
+    processingTime: number;
+    usage?: TokenUsage;
+}
+
 export interface AnalysisService {
     supportsStreaming(): boolean;
     analyzeImageStreaming(
         imageData: string,
         callbacks: StreamingCallbacks,
+    ): Promise<void>;
+    // New streaming method for ranking
+    rankProductSimilarityStreaming(
+        request: RankingRequest, 
+        callbacks: RankingCallbacks
     ): Promise<void>;
 }

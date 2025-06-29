@@ -2,6 +2,9 @@
  * Server type definitions for PauseShop backend
  */
 
+// Re-export analyze types including new ranking types
+export * from "./analyze";
+
 export interface HealthResponse {
     status: "healthy" | "unhealthy";
     timestamp: string;
