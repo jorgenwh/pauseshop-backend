@@ -245,15 +245,14 @@ export const rankProductsStreamingHandler = async (
                 logger.info(`[RANKING_STREAM] Retrieved original image from session: ${rankingRequest.pauseId}`);
             } else {
                 logger.warn(`[RANKING_STREAM] Session image unavailable for pauseId: ${rankingRequest.pauseId}`);
-                res.status(404).json({
-                    success: false,
-                    error: {
+                res.write(
+                    `event: error\ndata: ${JSON.stringify({
                         message: "Original image not found for the provided session ID.",
                         code: "SESSION_IMAGE_UNAVAILABLE",
-                        timestamp: new Date().toISOString(),
-                    },
-                });
-                return; // End the request
+                    })}\n\n`,
+                );
+                res.end();
+                return;
             }
         }
 

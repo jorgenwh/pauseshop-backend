@@ -11,10 +11,10 @@ Your goal is to rank the thumbnails by visual similarity to the specific clothin
 
 **CLOTHING RANKING CRITERIA**
 Score each thumbnail (0-100) based on:
-- **Color and Pattern Match (35 points)**: Exact color, pattern, and print matching.
+- **Color and Pattern Match (50 points)**: Exact color, pattern, and print matching.
 - **Style and Cut (30 points)**: Similarity in style (e.g., t-shirt, jeans, dress) and cut (e.g., slim fit, loose fit, v-neck).
-- **Material and Texture (20 points)**: Visual similarity of fabric material (e.g., denim, cotton, silk) and texture.
-- **Overall Vibe and Brand Aesthetics (15 points)**: How well the thumbnail matches the overall style and brand impression of the item in the image.
+- **Material and Texture (10 points)**: Visual similarity of fabric material (e.g., denim, cotton, silk) and texture.
+- **Overall Vibe and Brand Aesthetics (10 points)**: How well the thumbnail matches the overall style and brand impression of the item in the image.
 
 **PRIMARY DIRECTIVE**
 You MUST return exactly 10 product rankings, from rank 1 to rank 10.
