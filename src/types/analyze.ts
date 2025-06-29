@@ -106,8 +106,7 @@ export interface OpenRouterStreamChoice {
 export interface GeminiConfig {
     apiKey: string;
     model: string;
-    maxTokens: number;
-    thinkingBudget?: number;
+    deepSearchModel: string;
     promptCostPerToken: number;
     completionCostPerToken: number;
 }

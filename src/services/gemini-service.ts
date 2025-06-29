@@ -58,21 +58,9 @@ export class GeminiService implements AnalysisService {
                     },
                 ],
                 generationConfig: {
-                    maxOutputTokens: this.config.maxTokens,
                 },
             };
 
-            if (this.config.thinkingBudget !== undefined) {
-                request.generationConfig = {
-                    ...request.generationConfig,
-                    // The 'thinkingConfig' property is not directly part of GenerationConfig in the public API.
-                    // If it's a custom or internal property, it might need to be handled differently.
-                    // For now, removing it to resolve the type error.
-                    // thinkingConfig: {
-                    //     thinkingBudget: this.config.thinkingBudget,
-                    // },
-                };
-            }
 
             const model = this.client.getGenerativeModel({ model: this.config.model });
             const streamResult = await model.generateContentStream(request);
@@ -189,18 +177,11 @@ export class GeminiService implements AnalysisService {
                     },
                 ],
                 generationConfig: {
-                    maxOutputTokens: this.config.maxTokens,
                 },
             };
 
-            if (this.config.thinkingBudget !== undefined) {
-                geminiRequest.generationConfig = {
-                    ...geminiRequest.generationConfig,
-                    // Note: thinkingConfig removed as it's not in public API
-                };
-            }
 
-            const model = this.client.getGenerativeModel({ model: this.config.model });
+            const model = this.client.getGenerativeModel({ model: this.config.deepSearchModel });
             const streamResult = await model.generateContentStream(geminiRequest);
 
             let lastChunk: GenerateContentResponse | null = null;

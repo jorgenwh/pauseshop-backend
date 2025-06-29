@@ -87,7 +87,8 @@ const getGeminiConfig = (): GeminiConfig => {
         throw new Error("GEMINI_API_KEY environment variable is required");
     }
 
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-preview-05-20";
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite-preview-06-17";
+    const deepSearchModel = process.env.GEMINI_DEEP_SEARCH_MODEL || "gemini-2.5-flash";
     const pricing = GEMINI_MODEL_PRICING[model];
     if (!pricing) {
         throw new Error(
@@ -98,8 +99,7 @@ const getGeminiConfig = (): GeminiConfig => {
     return {
         apiKey,
         model,
-        maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS || "20000"),
-        thinkingBudget: parseInt(process.env.GEMINI_THINKING_BUDGET || "0"),
+        deepSearchModel,
         promptCostPerToken: pricing.promptCostPerMillionTokens / 1_000_000,
         completionCostPerToken:
             pricing.completionCostPerMillionTokens / 1_000_000,
