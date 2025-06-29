@@ -11,7 +11,6 @@ import { logger } from "../utils/logger";
 
 // Shared prompt caches
 let promptCache: string | null = null;
-let rankingPromptCache: string | null = null;
 
 /**
  * Load the prompt from file (shared cache)
