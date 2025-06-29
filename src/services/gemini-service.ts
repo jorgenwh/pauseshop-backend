@@ -143,7 +143,10 @@ export class GeminiService implements AnalysisService {
         const startTime = Date.now();
         try {
             // Load ranking prompt with product name injection
-            const prompt = await loadRankingPrompt(request.productName);
+            const prompt = await loadRankingPrompt(
+                request.productName,
+                request.category,
+            );
             const parser = new DefaultPartialRankingParser();
 
             let firstTokenTime: number | null = null;
@@ -151,6 +154,10 @@ export class GeminiService implements AnalysisService {
             let rankingCount = 0;
 
             // Prepare multi-image request: original image + all thumbnails
+            if (!request.originalImage) {
+                throw new Error("Original image is required for ranking.");
+            }
+
             const imageParts = [
                 // Original image first
                 {
@@ -196,7 +203,6 @@ export class GeminiService implements AnalysisService {
             const model = this.client.getGenerativeModel({ model: this.config.model });
             const streamResult = await model.generateContentStream(geminiRequest);
 
-            let fullContent = "";
             let lastChunk: GenerateContentResponse | null = null;
 
             for await (const chunk of streamResult.stream) {
@@ -208,10 +214,8 @@ export class GeminiService implements AnalysisService {
                     }
                     lastTokenTime = Date.now();
 
-                    fullContent += chunkText;
-
-                    // Parse rankings from the chunk
-                    const rankings = parser.parse(fullContent);
+                    // Parse rankings from the current chunk
+                    const rankings = parser.parse(chunkText);
                     
                     // Stream each ranking and check if we should stop
                     rankings.forEach((ranking) => {
@@ -227,6 +231,15 @@ export class GeminiService implements AnalysisService {
                     }
                 }
             }
+
+            // After the stream ends, flush the parser buffer to get any remaining rankings
+            const remainingRankings = parser.flush();
+            remainingRankings.forEach((ranking) => {
+                if (rankingCount < 10) {
+                    callbacks.onRanking(ranking);
+                    rankingCount++;
+                }
+            });
 
             const processingTime = Date.now() - startTime;
             const streamingDuration = lastTokenTime && firstTokenTime ? lastTokenTime - firstTokenTime : 0;

@@ -90,7 +90,7 @@ export class StreamingAnalysisService {
         logger.log("[RANKING_STREAM] =================================");
 
         // Validate provider supports ranking (only Gemini for now)
-        if (this.providerName !== "GEMINI") {
+        if (this.providerName.toUpperCase() !== "GEMINI") {
             const error = new Error(`Product ranking is only supported with Gemini provider. Current provider: ${this.providerName}`);
             callbacks.onError(error);
             return;

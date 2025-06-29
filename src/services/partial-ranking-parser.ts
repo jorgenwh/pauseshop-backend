@@ -8,6 +8,7 @@ import { logger } from "../utils/logger";
 
 export interface PartialRankingParser {
     parse(partialResponse: string): ProductRanking[];
+    flush(): ProductRanking[];
 }
 
 export class DefaultPartialRankingParser implements PartialRankingParser {
@@ -47,6 +48,31 @@ export class DefaultPartialRankingParser implements PartialRankingParser {
     }
 
     /**
+     * Flush the remaining buffer to parse any final rankings.
+     * This method processes the entire remaining buffer as a single unit.
+     */
+    flush(): ProductRanking[] {
+        const rankings: ProductRanking[] = [];
+        const trimmedBuffer = this.buffer.trim();
+
+        if (trimmedBuffer) {
+            try {
+                const ranking = this.parseRankingLine(trimmedBuffer);
+                if (ranking && !this.parsedRankings.has(ranking.id)) {
+                    rankings.push(ranking);
+                    this.parsedRankings.add(ranking.id);
+                }
+            } catch (error) {
+                // Log error but don't throw, as it might be partial data
+                logger.warn(`[RANKING_PARSER] Failed to parse final buffer content on flush: ${trimmedBuffer}`);
+            }
+        }
+
+        this.buffer = ""; // Clear buffer after flushing
+        return rankings;
+    }
+
+    /**
      * Parse a single line as a ranking JSON object
      */
     private parseRankingLine(line: string): ProductRanking | null {
@@ -81,8 +107,7 @@ export class DefaultPartialRankingParser implements PartialRankingParser {
         const ranking = obj as Record<string, unknown>;
         
         return (
-            typeof ranking.id === 'string' && 
-            ranking.id.trim().length > 0 &&
+            (typeof ranking.id === 'string' || typeof ranking.id === 'number') &&
             typeof ranking.similarityScore === 'number' && 
             ranking.similarityScore >= 0 && 
             ranking.similarityScore <= 100 &&

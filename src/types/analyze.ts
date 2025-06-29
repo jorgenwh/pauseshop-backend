@@ -196,8 +196,10 @@ export interface PartialProductParser {
 // ============================================================================
 
 export interface RankingRequest {
-    originalImage: string;           // base64 original video frame
+    originalImage?: string;          // base64 original video frame (optional)
+    pauseId?: string;                // ID for session-based image retrieval (optional)
     productName: string;             // from product metadata
+    category: Category;              // from product metadata
     thumbnails: ThumbnailData[];     // array of thumbnail images with IDs
 }
 

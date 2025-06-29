@@ -235,6 +235,28 @@ export const rankProductsStreamingHandler = async (
             return;
         }
 
+        // Session-first image retrieval
+        if (rankingRequest.pauseId && !rankingRequest.originalImage) {
+            const sessionManager = SessionManager.getInstance();
+            const session = sessionManager.getSession(rankingRequest.pauseId);
+
+            if (session?.screenshot) {
+                rankingRequest.originalImage = session.screenshot;
+                logger.info(`[RANKING_STREAM] Retrieved original image from session: ${rankingRequest.pauseId}`);
+            } else {
+                logger.warn(`[RANKING_STREAM] Session image unavailable for pauseId: ${rankingRequest.pauseId}`);
+                res.status(404).json({
+                    success: false,
+                    error: {
+                        message: "Original image not found for the provided session ID.",
+                        code: "SESSION_IMAGE_UNAVAILABLE",
+                        timestamp: new Date().toISOString(),
+                    },
+                });
+                return; // End the request
+            }
+        }
+
         await streamingService.rankProductSimilarityStreaming(rankingRequest, {
             onRanking: (ranking: ProductRanking) => {
                 res.write(

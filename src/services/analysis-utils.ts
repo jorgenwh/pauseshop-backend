@@ -55,35 +55,52 @@ export async function loadPrompt(): Promise<string> {
 /**
  * Load the ranking prompt from file and inject product name
  */
-export async function loadRankingPrompt(productName: string): Promise<string> {
-    // Load base ranking prompt (cache it)
-    if (!rankingPromptCache) {
-        let serverMode = process.env.SERVER_MODE || "dev";
-        if (serverMode !== "prod" && serverMode !== "dev") {
-            logger.warn(`Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`);
-            serverMode = "prod";
-        }
+export async function loadRankingPrompt(
+    productName: string,
+    category: Category,
+): Promise<string> {
+    const promptFileName = `${category}.txt`;
+    const defaultPromptFileName = "default.txt";
 
-        try {
-            const promptPath = resolve(
-                __dirname,
-                serverMode === "prod"
-                    ? "/usr/src/app/src/prompts/product-ranking.txt"
-                    : "../prompts/product-ranking.txt"
-            );
-            rankingPromptCache = await fs.readFile(promptPath, "utf-8");
-        } catch (error) {
-            throw new Error("Failed to load product ranking prompt");
-        }
+    let serverMode = process.env.SERVER_MODE || "dev";
+    if (serverMode !== "prod" && serverMode !== "dev") {
+        logger.warn(`Invalid SERVER_MODE: ${serverMode}. Defaulting to 'prod'.`);
+        serverMode = "prod";
     }
 
-    // Inject product name into the prompt
-    const promptWithProductName = rankingPromptCache.replace(
-        /\[PRODUCT_NAME\]/g,
-        productName.trim()
-    );
+    const getPromptPath = (fileName: string) => {
+        return resolve(
+            __dirname,
+            serverMode === "prod"
+                ? `/usr/src/app/src/prompts/ranking/${fileName}`
+                : `../prompts/ranking/${fileName}`,
+        );
+    };
 
-    return promptWithProductName.trim();
+    let promptPath = getPromptPath(promptFileName);
+    let promptContent: string;
+    let loadedPromptFile = promptFileName;
+ 
+     try {
+         promptContent = await fs.readFile(promptPath, "utf-8");
+     } catch (error) {
+         // If the specific prompt doesn't exist, fall back to the default
+         loadedPromptFile = defaultPromptFileName;
+         promptPath = getPromptPath(defaultPromptFileName);
+         try {
+             promptContent = await fs.readFile(promptPath, "utf-8");
+         } catch (defaultError) {
+             throw new Error("Failed to load any ranking prompt");
+         }
+     }
+ 
+     logger.info(`Using ranking prompt: ${loadedPromptFile}`);
+
+    // Inject product name and category into the prompt
+    promptContent = promptContent.replace(/\[PRODUCT_NAME\]/g, productName.trim());
+    promptContent = promptContent.replace(/\[CATEGORY\]/g, category);
+
+    return promptContent.trim();
 }
 
 /**
@@ -108,13 +125,13 @@ export function validateRankingObject(obj: unknown): boolean {
     const ranking = obj as Record<string, unknown>;
     
     return (
-        typeof ranking.id === 'string' && 
-        ranking.id.trim().length > 0 &&
-        typeof ranking.similarityScore === 'number' && 
-        ranking.similarityScore >= 0 && 
+        typeof ranking.id === 'number' &&
+        ranking.id > 0 &&
+        typeof ranking.similarityScore === 'number' &&
+        ranking.similarityScore >= 0 &&
         ranking.similarityScore <= 100 &&
-        typeof ranking.rank === 'number' && 
-        ranking.rank >= 1 && 
+        typeof ranking.rank === 'number' &&
+        ranking.rank >= 1 &&
         ranking.rank <= 10
     );
 }

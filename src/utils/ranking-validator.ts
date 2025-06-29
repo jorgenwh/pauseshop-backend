@@ -23,11 +23,14 @@ export const validateRankingRequest = (body: unknown): RankingValidationResult =
 
     const request = body as Record<string, unknown>;
 
-    // Validate originalImage
-    if (!request.originalImage || typeof request.originalImage !== "string") {
+    // Validate originalImage or pauseId
+    const hasOriginalImage = request.originalImage && typeof request.originalImage === "string";
+    const hasPauseId = request.pauseId && typeof request.pauseId === "string";
+
+    if (!hasOriginalImage && !hasPauseId) {
         return {
             isValid: false,
-            error: "Missing or invalid originalImage field",
+            error: "Request must include either 'originalImage' or 'pauseId'",
         };
     }
 
