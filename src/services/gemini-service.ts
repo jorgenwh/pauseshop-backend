@@ -209,9 +209,9 @@ export class GeminiService implements AnalysisService {
                     lastTokenTime = Date.now();
 
                     fullContent += chunkText;
-                    
+
                     // Parse rankings from the chunk
-                    const rankings = parser.parse(chunkText);
+                    const rankings = parser.parse(fullContent);
                     
                     // Stream each ranking and check if we should stop
                     rankings.forEach((ranking) => {

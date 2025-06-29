@@ -15,6 +15,7 @@ import { validateRankingRequest, isValidRankingRequest } from "../utils/ranking-
 import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
 import { SessionManager } from "../services/session-manager";
+import { logger } from "../utils/logger";
 
 /**
  * Handles POST /analyze/stream requests for SSE
@@ -49,7 +50,11 @@ export const analyzeImageStreamingHandler = async (
 
     // Send a "start" event immediately
     const { image, sessionId } = req.body as AnalyzeRequest;
-    const startData: { [key: string]: any } = {
+    const startData: {
+        timestamp: string;
+        provider: AnalysisProvider;
+        sessionId?: string;
+    } = {
         timestamp: new Date().toISOString(),
         provider: AnalysisProviderFactory.getCurrentProvider(),
     };
@@ -96,7 +101,7 @@ export const analyzeImageStreamingHandler = async (
                 res.end();
             },
             onError: (error: Error) => {
-                console.error(
+                logger.error(
                     "[ANALYZE_STREAM] Error during streaming analysis:",
                     error,
                 );
@@ -107,7 +112,7 @@ export const analyzeImageStreamingHandler = async (
             },
         });
     } catch (error) {
-        console.error(
+        logger.error(
             "[ANALYZE_STREAM] Uncaught error in streaming handler:",
             error,
         );
