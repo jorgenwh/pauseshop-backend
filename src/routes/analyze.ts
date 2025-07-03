@@ -132,7 +132,14 @@ export const getScreenshotHandler = (req: Request, res: Response) => {
         // Return the base64 data URL directly in a JSON response
         res.status(200).json({ success: true, screenshot: session.screenshot });
     } else {
-        res.status(404).json({ success: false, error: "Session not found" });
+        // Return 200 with success: false to avoid 404 console errors
+        // This is expected behavior when screenshots expire after 10 minutes
+        res.status(200).json({ 
+            success: false, 
+            error: "Screenshot unavailable", 
+            reason: "Session expired or not found",
+            code: "SCREENSHOT_EXPIRED"
+        });
     }
 };
 
