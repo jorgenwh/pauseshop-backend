@@ -237,7 +237,7 @@ export class GeminiService implements AnalysisService {
             const totalCost = promptCost + completionCost;
 
             logger.log(
-                `[GEMINI_SERVICE] Gemini querying time completed in ${geminiElapsedTime}ms`
+                `[GEMINI_SERVICE] Gemini querying time completed in ${geminiElapsedTime}ms using model: ${this.config.deepSearchModel}`
             );
             logger.log(
                 `[GEMINI_SERVICE] Ranking Analysis completed in ${processingTime}ms (streaming duration: ${streamingDuration}ms). Rankings: ${rankingCount}/10. Tokens: [${promptTokenCount}/${candidatesTokenCount}/${totalTokenCount}]. Cost: $${totalCost.toFixed(6)}`,
