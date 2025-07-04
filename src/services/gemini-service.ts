@@ -182,6 +182,7 @@ export class GeminiService implements AnalysisService {
 
 
             const model = this.client.getGenerativeModel({ model: this.config.deepSearchModel });
+            const geminiStartTime = Date.now();
             const streamResult = await model.generateContentStream(geminiRequest);
 
             let lastChunk: GenerateContentResponse | null = null;
@@ -212,6 +213,7 @@ export class GeminiService implements AnalysisService {
                     }
                 }
             }
+            const geminiElapsedTime = Date.now() - geminiStartTime;
 
             // After the stream ends, flush the parser buffer to get any remaining rankings
             const remainingRankings = parser.flush();
@@ -234,6 +236,9 @@ export class GeminiService implements AnalysisService {
             const completionCost = candidatesTokenCount * this.config.completionCostPerToken;
             const totalCost = promptCost + completionCost;
 
+            logger.log(
+                `[GEMINI_SERVICE] Gemini querying time completed in ${geminiElapsedTime}ms`
+            );
             logger.log(
                 `[GEMINI_SERVICE] Ranking Analysis completed in ${processingTime}ms (streaming duration: ${streamingDuration}ms). Rankings: ${rankingCount}/10. Tokens: [${promptTokenCount}/${candidatesTokenCount}/${totalTokenCount}]. Cost: $${totalCost.toFixed(6)}`,
             );
