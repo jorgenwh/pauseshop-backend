@@ -57,6 +57,7 @@ const createApp = (): express.Application => {
                 "http://localhost:5173", // For local website testing
                 "http://127.0.0.1:3000",
                 "https://pauseshop.net",
+                "https://freeze-frame.net",
             ],
             methods: ["GET", "POST", "OPTIONS"],
             allowedHeaders: [
