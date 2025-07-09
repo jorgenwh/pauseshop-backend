@@ -1,5 +1,5 @@
 /**
- * Server type definitions for PauseShop backend
+ * Server type definitions for FreezeFrame backend
  */
 
 // Re-export analyze types including new ranking types

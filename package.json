@@ -1,7 +1,7 @@
 {
-    "name": "pauseshop-server",
+    "name": "freezeframe-server",
     "version": "0.0.0",
-    "description": "PauseShop Backend Server",
+    "description": "FreezeFrame Backend Server",
     "private": true,
     "scripts": {
         "build": "tsc && cp -r src/prompts dist/",
