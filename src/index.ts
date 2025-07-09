@@ -1,5 +1,5 @@
 /**
- * PauseShop Server Entry Point
+ * FreezeFrame Server Entry Point
  */
 
 // Load environment variables from .env file
@@ -58,7 +58,7 @@ const startServer = (): void => {
 
         const server = app.listen(PORT, () => {
             logger.log("=================================");
-            logger.log("PauseShop Server Starting...");
+            logger.log("FreezeFrame Server Starting...");
             logger.log("=================================");
             logger.log("Environment Variables:");
             logger.log(`NODE_ENV: ${process.env.NODE_ENV || "development"}`);
@@ -67,7 +67,7 @@ const startServer = (): void => {
             logger.log(`Current Provider: ${app.locals.provider}`);
             logger.log(`Provider Config: ${app.locals.providerConfigValid ? "✅ Valid" : "❌ Invalid"}`);
             logger.log("============================================================================");
-            logger.log(`🚀 PauseShop Server running on port ${PORT}`);
+            logger.log(`🚀 FreezeFrame Server running on port ${PORT}`);
             logger.log(`📍 Environment: ${process.env.NODE_ENV || "development"}`);
             logger.log(`🔗 Health check: http://localhost:${PORT}/health`);
             logger.log(`⏰ Started at: ${new Date().toISOString()}`);
@@ -78,7 +78,7 @@ const startServer = (): void => {
             logger.info(`🛑 Received ${signal}. Starting graceful shutdown...`);
             server.close(() => {
                 logger.info("✅ HTTP server closed");
-                logger.info("👋 PauseShop Server stopped gracefully");
+                logger.info("👋 FreezeFrame Server stopped gracefully");
                 process.exit(0);
             });
 

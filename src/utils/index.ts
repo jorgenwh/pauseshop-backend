@@ -1,5 +1,5 @@
 /**
- * Utility functions for PauseShop server
+ * Utility functions for FreezeFrame server
  */
 
 /**
