@@ -6,8 +6,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import {
-    requestLogger,
     globalErrorHandler,
+    requestLogger,
     notFoundHandler,
 } from "./middleware";
 import routes from "./routes";
