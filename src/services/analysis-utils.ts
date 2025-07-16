@@ -52,7 +52,12 @@ export async function loadPrompt(language: string = 'en'): Promise<string> {
                 'de': 'German', 
                 'fr': 'French',
                 'it': 'Italian',
-                'ja': 'Japanese'
+                'ja': 'Japanese',
+                'ko': 'Korean',
+                'pt_BR': 'Portuguese (Brazil)',
+                'hi': 'Hindi',
+                'tr': 'Turkish',
+                'ar': 'Arabic'
             };
             
             const languageName = languageNames[language] || 'English';
@@ -124,7 +129,12 @@ export async function loadRankingPrompt(
             'de': 'German', 
             'fr': 'French',
             'it': 'Italian',
-            'ja': 'Japanese'
+            'ja': 'Japanese',
+            'ko': 'Korean',
+            'pt_BR': 'Portuguese (Brazil)',
+            'hi': 'Hindi',
+            'tr': 'Turkish',
+            'ar': 'Arabic'
         };
         
         const languageName = languageNames[language] || 'English';

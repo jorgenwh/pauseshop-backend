@@ -9,7 +9,7 @@ export function detectLanguage(acceptLanguageHeader?: string): string {
         return 'en';
     }
     
-    const supportedLanguages = ['en', 'es', 'de', 'fr', 'it', 'ja'];
+    const supportedLanguages = ['en', 'es', 'de', 'fr', 'it', 'ja', 'ko', 'pt_BR', 'hi', 'tr', 'ar'];
     const parsedLanguages = acceptLanguage.parse(acceptLanguageHeader);
     
     for (const lang of parsedLanguages) {
