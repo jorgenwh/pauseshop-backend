@@ -9,15 +9,16 @@ import { Product, TargetGender, Category } from "../types/analyze";
 import { ICON_CATEGORIES, IconCategory } from "../config/icon-categories";
 import { logger } from "../utils/logger";
 
-// Shared prompt caches
-let promptCache: string | null = null;
+// Shared prompt caches - now keyed by language
+const promptCache: Map<string, string> = new Map();
 
 /**
- * Load the prompt from file (shared cache)
+ * Load the prompt from file with language injection
  */
-export async function loadPrompt(): Promise<string> {
-    if (promptCache) {
-        return promptCache;
+export async function loadPrompt(language: string = 'en'): Promise<string> {
+    const cacheKey = language;
+    if (promptCache.has(cacheKey)) {
+        return promptCache.get(cacheKey)!;
     }
 
     let serverMode = process.env.SERVER_MODE || "dev";
@@ -44,8 +45,24 @@ export async function loadPrompt(): Promise<string> {
             iconCategoriesList,
         );
 
-        promptCache = promptContent.trim();
-        return promptCache;
+        // Inject language instructions if language is not English
+        if (language !== 'en') {
+            const languageNames: Record<string, string> = {
+                'es': 'Spanish',
+                'de': 'German', 
+                'fr': 'French',
+                'it': 'Italian',
+                'ja': 'Japanese'
+            };
+            
+            const languageName = languageNames[language] || 'English';
+            const languageInstruction = `\n\nIMPORTANT: Respond in ${languageName} language. All product names, brands, colors, features, and descriptions should be in ${languageName}. EXCEPTION: The "iconCategory" and "category" fields must ALWAYS remain in English as they need to match the predefined system values.`;
+            promptContent = promptContent + languageInstruction;
+        }
+
+        const finalPrompt = promptContent.trim();
+        promptCache.set(cacheKey, finalPrompt);
+        return finalPrompt;
     } catch (error) {
         throw new Error("Failed to load image analysis prompt");
     }
@@ -57,6 +74,7 @@ export async function loadPrompt(): Promise<string> {
 export async function loadRankingPrompt(
     productName: string,
     category: Category,
+    language: string = 'en',
 ): Promise<string> {
     const promptFileName = `${category}.txt`;
     const defaultPromptFileName = "default.txt";
@@ -98,6 +116,21 @@ export async function loadRankingPrompt(
     // Inject product name and category into the prompt
     promptContent = promptContent.replace(/\[PRODUCT_NAME\]/g, productName.trim());
     promptContent = promptContent.replace(/\[CATEGORY\]/g, category);
+
+    // Inject language instructions if language is not English
+    if (language !== 'en') {
+        const languageNames: Record<string, string> = {
+            'es': 'Spanish',
+            'de': 'German', 
+            'fr': 'French',
+            'it': 'Italian',
+            'ja': 'Japanese'
+        };
+        
+        const languageName = languageNames[language] || 'English';
+        const languageInstruction = `\n\nIMPORTANT: Respond in ${languageName} language.`;
+        promptContent = promptContent + languageInstruction;
+    }
 
     return promptContent.trim();
 }

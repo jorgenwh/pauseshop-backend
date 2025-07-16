@@ -33,10 +33,11 @@ export class GeminiService implements AnalysisService {
     async analyzeImageStreaming(
         imageData: string,
         callbacks: StreamingCallbacks,
+        language: string = 'en',
     ): Promise<void> {
         const startTime = Date.now();
         try {
-            const prompt = await loadPrompt();
+            const prompt = await loadPrompt(language);
             const parser = new DefaultPartialProductParser();
 
             let firstTokenTime: number | null = null;

@@ -32,6 +32,7 @@ export class StreamingAnalysisService {
     public async analyzeImageStreaming(
         imageData: string,
         callbacks: StreamingAnalysisCallbacks,
+        language: string = 'en',
     ): Promise<void> {
         const products: Product[] = [];
 
@@ -70,7 +71,7 @@ export class StreamingAnalysisService {
                 onError: (error: Error) => {
                     callbacks.onError(error);
                 },
-            });
+            }, language);
         } catch (error) {
             callbacks.onError(error as Error);
         }

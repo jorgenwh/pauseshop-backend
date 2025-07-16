@@ -230,6 +230,7 @@ export interface AnalysisService {
     analyzeImageStreaming(
         imageData: string,
         callbacks: StreamingCallbacks,
+        language?: string,
     ): Promise<void>;
     // New streaming method for ranking
     rankProductSimilarityStreaming(

@@ -16,6 +16,7 @@ import { AnalysisProviderFactory } from "../services/analysis-provider-factory";
 import { StreamingAnalysisService } from "../services/streaming-analysis";
 import { SessionManager } from "../services/session-manager";
 import { logger } from "../utils/logger";
+import { detectLanguage } from "../services/i18n";
 
 /**
  * Handles POST /analyze/stream requests for SSE
@@ -68,6 +69,9 @@ export const analyzeImageStreamingHandler = async (
     res.write(`event: start\ndata: ${JSON.stringify(startData)}\n\n`);
 
     const streamingService = new StreamingAnalysisService();
+    
+    // Detect language from Accept-Language header
+    const language = detectLanguage(req.headers['accept-language']);
 
     try {
         if (!image) {
@@ -110,7 +114,7 @@ export const analyzeImageStreamingHandler = async (
                 );
                 res.end();
             },
-        });
+        }, language);
     } catch (error) {
         logger.error(
             "[ANALYZE_STREAM] Uncaught error in streaming handler:",
