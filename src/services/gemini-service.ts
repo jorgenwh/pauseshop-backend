@@ -17,6 +17,20 @@ import { DefaultPartialProductParser } from "./partial-product-parser";
 import { DefaultPartialRankingParser } from "./partial-ranking-parser";
 import { logger } from "../utils/logger";
 
+// Type definitions for Gemini API response structure
+interface GeminiUsageMetadata {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    responseTokenCount?: number;
+    totalTokenCount?: number;
+    thoughtsTokenCount?: number;
+}
+
+interface GeminiChunk {
+    text?: string;
+    usageMetadata?: GeminiUsageMetadata;
+}
+
 export class GeminiService implements AnalysisService {
     private client: GoogleGenAI;
     private config: GeminiConfig;
@@ -44,7 +58,7 @@ export class GeminiService implements AnalysisService {
 
             let firstTokenTime: number | null = null;
             let lastTokenTime: number | null = null;
-            let lastChunk: any = null;
+            let lastChunk: GeminiChunk | null = null;
 
             // Extract MIME type from base64 data URL
             const mimeTypeMatch = imageData.match(/^data:([^;]+);base64,/);
@@ -140,7 +154,7 @@ export class GeminiService implements AnalysisService {
             let firstTokenTime: number | null = null;
             let lastTokenTime: number | null = null;
             let rankingCount = 0;
-            let lastChunk: any = null;
+            let lastChunk: GeminiChunk | null = null;
 
             // Prepare multi-image request: original image + all thumbnails
             if (!request.originalImage) {
