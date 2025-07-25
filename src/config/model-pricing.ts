@@ -12,9 +12,13 @@ export const OPENAI_MODEL_PRICING: { [key: string]: ModelPricing } = {
 };
 
 export const GEMINI_MODEL_PRICING: { [key: string]: ModelPricing } = {
-    "gemini-2.5-flash-preview-05-20": {
+    "gemini-2.5-flash": {
         promptCostPerMillionTokens: 0.30,
         completionCostPerMillionTokens: 2.50,
+    },
+    "gemini-2.5-pro": {
+        promptCostPerMillionTokens: 1.25,
+        completionCostPerMillionTokens: 10.00,
     },
     "gemini-2.5-flash-lite-preview-06-17": {
         promptCostPerMillionTokens: 0.10,
