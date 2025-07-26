@@ -64,7 +64,7 @@ export class StatisticsService {
                 logger.info('[STATISTICS] Initialized with service account credentials');
             }
 
-            this.db = getFirestore(this.app);
+            this.db = getFirestore(this.app, 'ff-statistics');
             this.initialized = true;
             
             // Initialize daily stats document if it doesn't exist
