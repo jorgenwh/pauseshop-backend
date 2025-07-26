@@ -46,7 +46,7 @@ const validateEnvironment = (): void => {
     logger.info(`✅ Environment variables validated for ${provider} provider`);
 };
 
-const startServer = async (): Promise<void> => {
+const startServer = (): void => {
     try {
         // Validate environment variables first
         validateEnvironment();
@@ -56,7 +56,7 @@ const startServer = async (): Promise<void> => {
         logger.info("✅ Session manager initialized");
         
         // Initialize statistics service
-        await StatisticsService.getInstance().initialize();
+        StatisticsService.getInstance().initialize();
         logger.info("✅ Statistics service initialized");
 
         const app = createApp();

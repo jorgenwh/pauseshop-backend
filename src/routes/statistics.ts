@@ -50,20 +50,15 @@ export const trackPauseHandler = async (
  * Get current statistics
  * GET /api/statistics
  */
-export const getStatisticsHandler = async (
+export const getTotalStatisticsHandler = async (
     req: Request,
     res: Response,
 ): Promise<void> => {
     try {
-        const stats = await StatisticsService.getInstance().getStatistics();
+        const stats = await StatisticsService.getInstance().getTotalStatistics();
         res.status(200).json({ 
             success: true, 
-            statistics: stats || {
-                websiteVisits: 0,
-                imageAnalyses: 0,
-                deepSearches: 0,
-                pausesRegistered: 0
-            }
+            statistics: stats
         });
     } catch (error) {
         logger.error("[STATISTICS] Failed to get statistics:", error);
@@ -84,7 +79,7 @@ export const getDailyStatisticsHandler = async (
 ): Promise<void> => {
     try {
         const { date } = req.params;
-        
+
         // Validate date format
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
             res.status(400).json({ 
@@ -93,17 +88,12 @@ export const getDailyStatisticsHandler = async (
             });
             return;
         }
-        
+
         const stats = await StatisticsService.getInstance().getDailyStatistics(date);
         res.status(200).json({ 
             success: true, 
             date,
-            statistics: stats || {
-                websiteVisits: 0,
-                imageAnalyses: 0,
-                deepSearches: 0,
-                pausesRegistered: 0
-            }
+            statistics: stats
         });
     } catch (error) {
         logger.error("[STATISTICS] Failed to get daily statistics:", error);
