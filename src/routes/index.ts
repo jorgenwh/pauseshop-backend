@@ -13,7 +13,7 @@ import {
 import {
     trackWebsiteVisitHandler,
     trackPauseHandler,
-    getStatisticsHandler,
+    getTotalStatisticsHandler,
     getDailyStatisticsHandler,
 } from "./statistics";
 
@@ -45,8 +45,8 @@ router.post("/statistics/pause", (req, res, next) => {
     void trackPauseHandler(req, res).catch(next);
 });
 
-router.get("/statistics", (req, res, next) => {
-    void getStatisticsHandler(req, res).catch(next);
+router.get("/statistics/total", (req, res, next) => {
+    void getTotalStatisticsHandler(req, res).catch(next);
 });
 
 router.get("/statistics/daily/:date", (req, res, next) => {

@@ -25,7 +25,7 @@ export class StatisticsService {
     /**
      * Initialize Firestore connection
      */
-    async initialize(): Promise<void> {
+    initialize(): void {
         if (this.initialized) {
             return;
         }
@@ -126,7 +126,7 @@ export class StatisticsService {
      */
     async getDailyStatistics(date: string): Promise<Statistics | null> {
         if (!this.db) {
-            console.log("[STATISTICS] Failed to fetch daily statistics: Firestore DB not initialized");
+            logger.debug("[STATISTICS] Failed to fetch daily statistics: Firestore DB not initialized");
             return null;
         }
 
@@ -134,7 +134,7 @@ export class StatisticsService {
             const doc = await this.db.collection('daily').doc(date).get();
 
             if (!doc.exists) {
-                console.log(`[STATISTICS] No statistics found for date: ${date}`);
+                logger.debug(`[STATISTICS] No statistics found for date: ${date}`);
                 return null;
             }
 
@@ -151,7 +151,7 @@ export class StatisticsService {
      */
     async getTotalStatistics(): Promise<Statistics | null> {
         if (!this.db) {
-            console.log("[STATISTICS] Failed to fetch total statistics: Firestore DB not initialized");
+            logger.debug("[STATISTICS] Failed to fetch total statistics: Firestore DB not initialized");
             return null;
         }
 
@@ -159,7 +159,7 @@ export class StatisticsService {
             const doc = await this.db.collection('total').doc('counters').get();
 
             if (!doc.exists) {
-                console.log(`[STATISTICS] Failed to get total statistics: Document does not exist`);
+                logger.debug(`[STATISTICS] Failed to get total statistics: Document does not exist`);
                 return null;
             }
 
