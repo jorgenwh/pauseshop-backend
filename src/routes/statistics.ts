@@ -47,8 +47,68 @@ export const trackPauseHandler = async (
 };
 
 /**
+ * Track clicked Amazon link event from extension
+ * POST /api/statistics/clickedAmazonLink
+ */
+export const trackClickedAmazonLinkHandler = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        await StatisticsService.getInstance().trackClickedAmazonLink();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        logger.error("[STATISTICS] Failed to track pause:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: "Failed to track 'clicked Amazon link' event"
+        });
+    }
+};
+
+/**
+ * Track redirects to extension Google Web Store page event from website
+ * POST /api/statistics/extensionRedirect
+ */
+export const trackExtensionRedirectHandler = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        await StatisticsService.getInstance().trackExtensionRedirect();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        logger.error("[STATISTICS] Failed to track pause:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: "Failed to track 'extension redirect' event"
+        });
+    }
+};
+
+/**
+ * Track redirects to extension Google Web Store page event from website's /extension page
+ * POST /api/statistics/extensionRedirectPage
+ */
+export const trackExtensionRedirectPageHandler = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
+    try {
+        await StatisticsService.getInstance().trackExtensionRedirectPage();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        logger.error("[STATISTICS] Failed to track pause:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: "Failed to track 'extension redirect page' event"
+        });
+    }
+};
+
+/**
  * Get current statistics
- * GET /api/statistics
+ * GET /api/statistics/total
  */
 export const getTotalStatisticsHandler = async (
     req: Request,
@@ -64,7 +124,7 @@ export const getTotalStatisticsHandler = async (
         logger.error("[STATISTICS] Failed to get statistics:", error);
         res.status(500).json({ 
             success: false, 
-            error: "Failed to get statistics" 
+            error: "Failed to get total statistics" 
         });
     }
 };
