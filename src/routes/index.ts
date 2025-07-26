@@ -10,6 +10,12 @@ import {
     endSessionHandler,
     rankProductsStreamingHandler,
 } from "./analyze";
+import {
+    trackWebsiteVisitHandler,
+    trackPauseHandler,
+    getStatisticsHandler,
+    getDailyStatisticsHandler,
+} from "./statistics";
 
 const router = Router();
 
@@ -28,6 +34,23 @@ router.post("/session/:sessionId/end", endSessionHandler);
 // Streaming product ranking endpoint
 router.post("/analyze/rank-products", (req, res, next) => {
     void rankProductsStreamingHandler(req, res).catch(next);
+});
+
+// Statistics endpoints
+router.post("/statistics/website-visit", (req, res, next) => {
+    void trackWebsiteVisitHandler(req, res).catch(next);
+});
+
+router.post("/statistics/pause", (req, res, next) => {
+    void trackPauseHandler(req, res).catch(next);
+});
+
+router.get("/statistics", (req, res, next) => {
+    void getStatisticsHandler(req, res).catch(next);
+});
+
+router.get("/statistics/daily/:date", (req, res, next) => {
+    void getDailyStatisticsHandler(req, res).catch(next);
 });
 
 export default router;

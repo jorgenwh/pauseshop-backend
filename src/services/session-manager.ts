@@ -9,6 +9,7 @@ export class SessionManager {
     private sessions: Map<string, Session> = new Map();
 
     private constructor() {
+        console.log("SessionManager initialized with max sessions:", MAX_SESSIONS);
         // Periodically clean up expired sessions
         setInterval(() => this.cleanupExpiredSessions(), 60 * 1000); // Every minute
     }

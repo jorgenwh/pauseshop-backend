@@ -24,6 +24,11 @@ export const logger = {
     error: (...args: unknown[]) => {
         console.error(`[ERROR] ${getFormattedTimestamp()}`, ...args);
     },
+    debug: (...args: unknown[]) => {
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`[DEBUG] ${getFormattedTimestamp()}`, ...args);
+        }
+    },
     log: (...args: unknown[]) => {
         console.log(...args);
     },

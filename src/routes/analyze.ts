@@ -17,6 +17,7 @@ import { StreamingAnalysisService } from "../services/streaming-analysis";
 import { SessionManager } from "../services/session-manager";
 import { logger } from "../utils/logger";
 import { detectLanguage } from "../services/i18n";
+import { StatisticsService } from "../services/statistics-service";
 
 /**
  * Handles POST /analyze/stream requests for SSE
@@ -72,6 +73,9 @@ export const analyzeImageStreamingHandler = async (
     
     // Detect language from Accept-Language header
     const language = detectLanguage(req.headers['accept-language']);
+    
+    // Track image analysis
+    await StatisticsService.getInstance().trackImageAnalysis();
 
     try {
         if (!image) {
@@ -215,6 +219,9 @@ export const rankProductsStreamingHandler = async (
     );
 
     const streamingService = new StreamingAnalysisService();
+    
+    // Track deep search
+    await StatisticsService.getInstance().trackDeepSearch();
 
     try {
         // Validate request body structure

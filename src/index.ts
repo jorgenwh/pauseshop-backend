@@ -8,6 +8,7 @@ dotenv.config();
 
 import createApp from "./app";
 import { SessionManager } from "./services/session-manager";
+import { StatisticsService } from "./services/statistics-service";
 import { logger } from "./utils/logger";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -45,7 +46,7 @@ const validateEnvironment = (): void => {
     logger.info(`✅ Environment variables validated for ${provider} provider`);
 };
 
-const startServer = (): void => {
+const startServer = async (): Promise<void> => {
     try {
         // Validate environment variables first
         validateEnvironment();
@@ -53,6 +54,10 @@ const startServer = (): void => {
         // Initialize services
         SessionManager.getInstance();
         logger.info("✅ Session manager initialized");
+        
+        // Initialize statistics service
+        await StatisticsService.getInstance().initialize();
+        logger.info("✅ Statistics service initialized");
 
         const app = createApp();
 
