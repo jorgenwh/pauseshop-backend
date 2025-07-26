@@ -13,6 +13,9 @@ import {
 import {
     trackWebsiteVisitHandler,
     trackPauseHandler,
+    trackClickedAmazonLinkHandler,
+    trackExtensionRedirectHandler,
+    trackExtensionRedirectPageHandler,
     getTotalStatisticsHandler,
     getDailyStatisticsHandler,
 } from "./statistics";
@@ -43,6 +46,18 @@ router.post("/statistics/website-visit", (req, res, next) => {
 
 router.post("/statistics/pause", (req, res, next) => {
     void trackPauseHandler(req, res).catch(next);
+});
+
+router.post("/statistics/clickedAmazonLink", (req, res, next) => {
+    void trackClickedAmazonLinkHandler(req, res).catch(next);
+});
+
+router.post("/statistics/extensionRedirect", (req, res, next) => {
+    void trackExtensionRedirectHandler(req, res).catch(next);
+});
+
+router.post("/statistics/extensionRedirectPage", (req, res, next) => {
+    void trackExtensionRedirectPageHandler(req, res).catch(next);
 });
 
 router.get("/statistics/total", (req, res, next) => {

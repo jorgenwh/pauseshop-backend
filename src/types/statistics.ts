@@ -21,5 +21,8 @@ export enum StatisticType {
     WEBSITE_VISIT = 'websiteVisits',
     IMAGE_ANALYSIS = 'imageAnalyses',
     DEEP_SEARCH = 'deepSearches',
-    PAUSE_REGISTERED = 'pausesRegistered'
+    PAUSE_REGISTERED = 'pausesRegistered',
+    CLICKED_AMAZON_LINK = 'clickedAmazonLink',
+    EXTENSION_REDIRECT = 'extensionRedirect',
+    EXTENSION_REDIRECT_PAGE = 'extensionRedirectPage'
 }

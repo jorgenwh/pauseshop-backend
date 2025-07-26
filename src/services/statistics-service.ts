@@ -198,4 +198,25 @@ export class StatisticsService {
     async trackPauseRegistered(): Promise<void> {
         await this.increment(StatisticType.PAUSE_REGISTERED);
     }
+
+    /**
+     * Track clicking of Amazon links in extension
+     */
+    async trackClickedAmazonLink(): Promise<void> {
+        await this.increment(StatisticType.CLICKED_AMAZON_LINK);
+    }
+
+    /**
+     * Track redirects to extension page on Google Web Store from freeze-frame.net
+     */
+    async trackExtensionRedirect(): Promise<void> {
+        await this.increment(StatisticType.EXTENSION_REDIRECT);
+    }
+
+    /**
+     * Track redirects to extension page on Google Web Store from freeze-frame.net/extension
+     */
+    async trackExtensionRedirectPage(): Promise<void> {
+        await this.increment(StatisticType.EXTENSION_REDIRECT_PAGE);
+    }
 }
