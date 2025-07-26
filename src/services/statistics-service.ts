@@ -84,7 +84,7 @@ export class StatisticsService {
         if (!this.db) return;
 
         const today = new Date().toISOString().split('T')[0];
-        const dailyRef = this.db.collection('statistics').doc(`counters/daily/${today}`);
+        const dailyRef = this.db.collection('daily').doc(today);
         
         try {
             await dailyRef.set({
@@ -112,14 +112,14 @@ export class StatisticsService {
         
         try {
             // Update total counter
-            const totalRef = this.db.collection('statistics').doc('counters/total');
+            const totalRef = this.db.collection('statistics').doc('total');
             await totalRef.set({
                 [type]: FieldValue.increment(count),
                 lastUpdated: FieldValue.serverTimestamp()
             }, { merge: true });
 
             // Update daily counter
-            const dailyRef = this.db.collection('statistics').doc(`counters/daily/${today}`);
+            const dailyRef = this.db.collection('daily').doc(today);
             await dailyRef.set({
                 [type]: FieldValue.increment(count),
                 date: today,
@@ -141,7 +141,7 @@ export class StatisticsService {
         }
 
         try {
-            const doc = await this.db.collection('statistics').doc('counters/total').get();
+            const doc = await this.db.collection('statistics').doc('total').get();
             
             if (!doc.exists) {
                 return {
@@ -169,7 +169,7 @@ export class StatisticsService {
         }
 
         try {
-            const doc = await this.db.collection('statistics').doc(`counters/daily/${date}`).get();
+            const doc = await this.db.collection('daily').doc(date).get();
             
             if (!doc.exists) {
                 return {
