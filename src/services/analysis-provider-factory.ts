@@ -87,8 +87,8 @@ const getGeminiConfig = (): GeminiConfig => {
         throw new Error("GEMINI_API_KEY environment variable is required");
     }
 
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite-preview-06-17";
-    const deepSearchModel = process.env.GEMINI_DEEP_SEARCH_MODEL || "gemini-2.5-flash-lite-preview-06-17";
+    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+    const deepSearchModel = process.env.GEMINI_DEEP_SEARCH_MODEL || "gemini-2.5-flash-lite";
     const pricing = GEMINI_MODEL_PRICING[model];
     if (!pricing) {
         throw new Error(
