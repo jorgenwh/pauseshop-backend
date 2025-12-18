@@ -82,7 +82,7 @@ export class GeminiService implements AnalysisService {
                 ],
                 config: {
                     thinkingConfig: {
-                        thinkingBudget: 0,
+                        thinkingLevel: "MINIMAL",
                     },
                 },
             });
@@ -203,7 +203,7 @@ export class GeminiService implements AnalysisService {
                 ],
                 config: {
                     thinkingConfig: {
-                        thinkingBudget: 512,
+                        thinkingLevel: "MINIMAL",
                     },
                 },
             });
